@@ -36,6 +36,9 @@ const categories = [
   { id: 'meals', name: '🍳 All-Day Plates' }
 ];
 
+// Isolate our dynamic recommended products for the specialized showcase block
+const recommendedItems = items.filter(item => item.isRecommended === true);
+
 const structuredMenu = categories.map(cat => {
   return {
     ...cat,
@@ -93,7 +96,7 @@ const locationInfo = "Tibanga Highway, near MSU-IIT, Iligan City";
     </div>
     )}
 
-    <!-- Tavern Aesthetic Hero Layout Block (High Contrast Editorial Style) -->
+    <!-- Tavern Aesthetic Hero Layout Block -->
     <section class="relative bg-gradient-to-b from-stone-100 to-transparent py-24 px-6 text-center border-b border-stone-200/50">
         <div class="max-w-3xl mx-auto">
             <span class="text-xs uppercase font-extrabold tracking-widest text-amber-900 bg-amber-100 px-4 py-1.5 rounded-full">Proudly Serving Iligan City</span>
@@ -103,21 +106,30 @@ const locationInfo = "Tibanga Highway, near MSU-IIT, Iligan City";
             <p class="text-base md:text-lg leading-relaxed max-w-xl mx-auto text-stone-600 mb-10">
                 {themeSettings.heroDescription || 'Once a standard blueprint, now a community beacon. Every cup poured supports local development, job skills, and hope right here near MSU-IIT.'}
             </p>
-            <div class="flex flex-col sm:flex-row justify-center gap-4 max-w-xs mx-auto sm:max-w-none">
-                <a href="#menu-showcase" class="bg-amber-950 text-amber-100 hover:bg-amber-900 px-8 py-4 rounded-xl font-bold text-sm tracking-wide transition shadow-xl shadow-amber-950/20">
-                    Our Menu Specials
-                </a>
-                <a href="https://m.me" target="_blank" class="bg-white text-stone-800 border border-stone-200 px-8 py-4 rounded-xl font-bold text-sm hover:bg-stone-50 transition">
-                    Start a Pickup Order
-                </a>
-            </div>
         </div>
     </section>
+
+    <!-- NEW FEATURE: Recommended for the Day Spotlight Board Section -->
+    {recommendedItems.length > 0 && (
+      <section class="bg-amber-50/30 border-b border-amber-200/20 py-16 px-4 md:px-6">
+        <div class="max-w-6xl mx-auto">
+          <div class="flex items-center gap-3 mb-10 justify-center md:justify-start">
+            <span class="text-xl">⚡</span>
+            <h3 class="font-serif text-3xl font-black tracking-tight text-stone-900">Recommended for the Day</h3>
+          </div>
+          <div class="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {recommendedItems.map((p) => (
+              <ProductCard item={p} urlFor={urlFor} themeSettings={themeSettings} />
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
 
     <!-- Tabbed Menu Segment -->
     <section id="menu-showcase" class="max-w-6xl w-full mx-auto px-4 md:px-6 py-20 flex-1">
         <div class="text-center mb-10">
-            <h3 class="font-serif text-3xl md:text-4xl font-black text-stone-900 tracking-tight">Serving Up Something for Everyone</h3>
+            <h3 class="font-serif text-3xl md:text-4xl font-black text-stone-900 tracking-tight">Full Store Inventory</h3>
             <p class="text-stone-400 text-sm mt-1">From bold brews to sweet sips, select a category below to explore.</p>
         </div>
 
@@ -180,11 +192,4 @@ const locationInfo = "Tibanga Highway, near MSU-IIT, Iligan City";
                         setTimeout(() => {
                             activePane.classList.remove('opacity-0', 'translate-y-2');
                             activePane.classList.add('opacity-100');
-                        }, 30);
-                    }
-                });
-            });
-        });
-    </script>
-</body>
-</html>
+}, 30);}});});});

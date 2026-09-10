@@ -6,9 +6,13 @@ const cardShadow = themeSettings.shadowIntensity || 'shadow-md';
 const cardRadius = themeSettings.borderRadius || 'rounded-3xl';
 const isDark = themeSettings.modeSelection === 'dark';
 const isFeatured = item.isFeatured === true;
+
+// Build a dynamic star generator array based on the rating number
+const starsCount = item.rating || 5;
+const starsArray = Array.from({ length: starsCount });
 ---
 
-<div class={`overflow-hidden flex flex-col justify-between group transition-all duration-300 border ${cardShadow} ${cardRadius} ${isFeatured ? 'md:col-span-2 border-amber-700/40 bg-amber-50/20' : (isDark ? 'bg-stone-900 border-stone-800' : 'bg-white border-stone-200/60')}`}>
+<div class={`overflow-hidden flex flex-col justify-between group transition-all duration-300 border ${cardShadow} ${cardRadius} ${isFeatured ? 'md:col-span-2 border-amber-700/40 bg-amber-50/15' : (isDark ? 'bg-stone-900 border-stone-800' : 'bg-white border-stone-200/60')}`}>
     <div class="relative overflow-hidden aspect-video bg-stone-100">
         {item.image ? (
             <img 
@@ -22,7 +26,7 @@ const isFeatured = item.isFeatured === true;
         )}
         
         {isFeatured && (
-          <span class="absolute top-4 left-4 bg-amber-800 text-amber-50 font-sans font-bold text-[10px] tracking-widest uppercase px-3 py-1 rounded-full">
+          <span class="absolute top-4 left-4 bg-amber-950 text-amber-100 font-sans font-bold text-[9px] tracking-widest uppercase px-3 py-1 rounded-full">
             ⭐ Featured Special
           </span>
         )}
@@ -34,19 +38,35 @@ const isFeatured = item.isFeatured === true;
 
     <div class="p-8 flex-1 flex flex-col justify-between">
         <div>
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <!-- Star Ratings Layer Integration -->
+            <div class="flex items-center gap-1 mb-2 text-amber-500 text-xs">
+              {starsArray.map(() => <span>★</span>)}
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-3">
               <h5 class={`font-serif text-2xl font-black tracking-tight transition-colors ${isDark ? 'group-hover:text-amber-400 text-white' : 'group-hover:text-amber-950 text-stone-900'}`}>
                   {item.name}
               </h5>
               {item.caffeine && (
                 <span class="text-[10px] font-bold bg-stone-100 text-stone-500 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                  ⚡ {item.caffeine} Caffeine
+                  ⚡ {item.caffeine}
                 </span>
               )}
             </div>
+            
             <p class={`text-sm leading-relaxed mb-6 font-normal ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
                 {item.description}
             </p>
+
+            <!-- Testimonial Asset Injection Layer -->
+            {item.testimonialText && (
+              <div class="border-l-2 border-amber-800/30 pl-4 py-1 my-6 bg-stone-50/50 rounded-r-lg">
+                <p class="text-xs italic text-stone-500 leading-relaxed">"{item.testimonialText}"</p>
+                {item.testimonialAuthor && (
+                  <span class="text-[10px] font-bold text-amber-900 block mt-1">— {item.testimonialAuthor}</span>
+                )}
+              </div>
+            )}
         </div>
         
         <a 
