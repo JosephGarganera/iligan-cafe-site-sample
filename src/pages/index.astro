@@ -16,12 +16,13 @@ let rawSettings = null;
 try {
   items = await sanityClient.fetch(`*[_type == "menuItem" && isAvailable == true] | order(isFeatured desc, orderPriority desc)`);
   activeStaff = await sanityClient.fetch(`*[_type == "staffMember" && isOnShift == true]`);
-  rawSettings = await sanityClient.fetch(`*[_type == "siteSettings"]`);
+  rawSettings = await sanityClient.fetch(`*[_type == "siteSettings"][0]`); // Fetch the first configuration document directly
 } catch (error) {
   console.error("Live database configuration sync interrupted:", error);
 }
 
-const themeSettings = rawSettings?.[0] || {
+// FIXED: Implemented clean fallback conditional evaluation block to bypass compilation error
+const themeSettings = rawSettings ? rawSettings : {
   title: "Chedings Copycat Cafe",
   tagline: "Brewing Community & Great Coffee in the heart of Iligan",
   modeSelection: "light",
@@ -36,7 +37,7 @@ const categories = [
   { id: 'meals', name: '🍳 All-Day Plates' }
 ];
 
-// Isolate our dynamic recommended products for the specialized showcase block
+// Isolate our dynamic recommended products for the specialized showcase block safely
 const recommendedItems = items.filter(item => item.isRecommended === true);
 
 const structuredMenu = categories.map(cat => {
@@ -109,7 +110,7 @@ const locationInfo = "Tibanga Highway, near MSU-IIT, Iligan City";
         </div>
     </section>
 
-    <!-- NEW FEATURE: Recommended for the Day Spotlight Board Section -->
+    <!-- Recommended for the Day Spotlight Board Section -->
     {recommendedItems.length > 0 && (
       <section class="bg-amber-50/30 border-b border-amber-200/20 py-16 px-4 md:px-6">
         <div class="max-w-6xl mx-auto">
@@ -190,10 +191,10 @@ const locationInfo = "Tibanga Highway, near MSU-IIT, Iligan City";
                     if (activePane) {
                         activePane.classList.remove('hidden');
                         setTimeout(() => {
-                            activePane.classList.remove('opacity-0', 'translate-y-2');
-                            activePane.classList.add('opacity-100');
-						}, 30);
-					}
-				});
+						activePane.classList.remove('opacity-0', 'translate-y-2');
+						activePane.classList.add('opacity-100');
+					}, 30);
+				}
 			});
 		});
+	});	
