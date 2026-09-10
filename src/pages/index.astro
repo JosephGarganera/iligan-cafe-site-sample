@@ -30,12 +30,14 @@ const structuredMenu = categories.map(cat => ({
 // FIXED: Aligned template accessor string to match 'seasonalTheme' from queries utility
 const currentSeason = themeSettings.seasonalTheme || 'summer';
 
+// src/pages/index.astro
 const globalStyles = {
   summer: 'bg-[#FAF9F5] text-stone-800',
   rainy: 'bg-[#1E222A] text-slate-200',
-  diyandi: 'bg-[#FFFDF9] text-stone-900',
+  diyandi: 'bg-[#450a0a] text-amber-50', // FIXED: Direct crimson canvas mapping
   holiday: 'bg-[#14231C] text-stone-200'
 };
+
 const globalThemeClass = globalStyles[currentSeason] || globalStyles.summer;
 ---
 

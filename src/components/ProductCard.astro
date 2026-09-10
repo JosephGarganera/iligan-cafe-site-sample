@@ -7,12 +7,47 @@ const cardRadius = themeSettings?.borderRadius || 'rounded-3xl';
 const currentSeason = themeSettings?.seasonalTheme || 'summer';
 
 // Seasonal Configuration Color Mapping Matrix
+// src/components/ProductCard.astro
 const styles = {
-  summer: { bg: 'bg-[#FAF9F5]', text: 'text-stone-800', primary: 'bg-amber-950 text-amber-100 hover:bg-amber-900', border: 'border-stone-200/60', modalBg: 'bg-[#FAF9F5]', accentText: 'text-amber-900', badge: 'bg-amber-100 text-amber-950' },
-  rainy: { bg: 'bg-[#1E222A]', text: 'text-slate-100', primary: 'bg-slate-800 text-slate-100 hover:bg-slate-700', border: 'border-slate-800', modalBg: 'bg-[#212631]', accentText: 'text-sky-400', badge: 'bg-slate-800 text-slate-200' },
-  diyandi: { bg: 'bg-[#FFFDF9]', text: 'text-stone-900', primary: 'bg-red-700 text-white hover:bg-red-800', border: 'border-red-100', modalBg: 'bg-[#FFFDF9]', accentText: 'text-red-700', badge: 'bg-red-50 text-red-700' },
-  holiday: { bg: 'bg-[#14231C]', text: 'text-stone-100', primary: 'bg-red-700 text-white hover:bg-red-600', border: 'border-emerald-900', modalBg: 'bg-[#1A2E25]', accentText: 'text-emerald-400', badge: 'bg-emerald-900 text-emerald-100' }
+  summer: { 
+    bg: 'bg-[#FAF9F5]', 
+    text: 'text-stone-800', 
+    primary: 'bg-amber-950 text-amber-100 hover:bg-amber-900', 
+    border: 'border-stone-200/60', 
+    modalBg: 'bg-[#FAF9F5]', 
+    accentText: 'text-amber-900', 
+    badge: 'bg-amber-100 text-amber-950' 
+  },
+  rainy: { 
+    bg: 'bg-[#1E222A]', 
+    text: 'text-slate-100', 
+    primary: 'bg-slate-700 text-slate-100 hover:bg-slate-600', 
+    border: 'border-slate-800', 
+    modalBg: 'bg-[#212631]', 
+    accentText: 'text-sky-400', 
+    badge: 'bg-slate-800 text-slate-200' 
+  },
+  diyandi: { 
+    // FIXED: Upgraded to a deep, rich crimson red festival backdrop accent
+    bg: 'bg-[#450a0a]', 
+    text: 'text-amber-50', 
+    primary: 'bg-amber-500 text-stone-950 hover:bg-amber-400', 
+    border: 'border-red-900/40', 
+    modalBg: 'bg-[#450a0a]', 
+    accentText: 'text-amber-400', 
+    badge: 'bg-red-950 text-amber-400 border border-red-800/60' 
+  },
+  holiday: { 
+    bg: 'bg-[#14231C]', 
+    text: 'text-stone-100', 
+    primary: 'bg-red-700 text-white hover:bg-red-600', 
+    border: 'border-emerald-900', 
+    modalBg: 'bg-[#1A2E25]', 
+    accentText: 'text-emerald-400', 
+    badge: 'bg-emerald-900 text-emerald-100' 
+  }
 };
+
 
 const activeStyle = styles[currentSeason] || styles.summer;
 const isFeatured = item.isFeatured === true;
