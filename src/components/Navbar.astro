@@ -1,0 +1,16 @@
+---
+// src/components/Navbar.astro
+const { title, isDark } = Astro.props;
+const contactNum = "09171234567";
+---
+<header class={`backdrop-blur-xl border-b sticky top-0 z-50 transition-all ${isDark ? 'bg-stone-950/90 text-white border-stone-800/80' : 'bg-[#FAF9F5]/90 border-stone-200/60'}`}>
+    <div class="max-w-6xl mx-auto px-6 py-5 flex justify-between items-center">
+        <div class="flex flex-col">
+            <span class="font-serif text-2xl font-black tracking-tight text-amber-900">{title}</span>
+            <span class="text-[9px] uppercase font-bold tracking-widest text-stone-400 mt-0.5">Locally-Owned • Iligan City</span>
+        </div>
+        <a href={`tel:${contactNum}`} class="bg-amber-950 text-amber-100 hover:bg-amber-900 px-6 py-3 rounded-full font-bold text-xs tracking-wider uppercase transition shadow-sm">
+            Order Ahead
+        </a>
+    </div>
+</header>

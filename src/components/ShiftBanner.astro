@@ -1,0 +1,16 @@
+---
+// src/components/ShiftBanner.astro
+const { activeStaff, urlFor } = Astro.props;
+---
+{activeStaff.length > 0 && (
+<div class="bg-amber-950 text-amber-100 py-3.5 px-6 border-b border-amber-900/40 text-xs md:text-sm font-medium tracking-wide">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+        <p>👋 <span class="text-amber-400 font-bold">Behind the Counter:</span> Your coffees are being crafted with care today by <span class="text-white font-bold">{activeStaff.map((staff, i) => `${staff.name}${i < activeStaff.length - 1 ? ', ' : ''}`)}</span></p>
+        <div class="flex -space-x-2 overflow-hidden">
+            {activeStaff.map((staff) => staff.photo && (
+                <img class="inline-block h-7 w-7 rounded-full ring-2 ring-amber-950 object-cover" src={urlFor(staff.photo).width(64).height(64).url()} alt={staff.name} />
+            ))}
+        </div>
+    </div>
+</div>
+)}

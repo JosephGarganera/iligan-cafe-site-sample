@@ -1,34 +1,18 @@
 ---
 import '../styles/global.css';
-import { sanityClient } from '../utils/sanity.js';
+import { fetchStoreData } from '../utils/queries.js';
 import imageUrlBuilder from '@sanity/image-url';
+import { sanityClient } from '../utils/sanity.js';
+import Navbar from '../components/Navbar.astro';
+import ShiftBanner from '../components/ShiftBanner.astro';
 import ProductCard from '../components/ProductCard.astro';
 
+// Initialize image configuration maps safely on the server
 const builder = imageUrlBuilder(sanityClient);
-function urlFor(source) {
-  return builder.image(source);
-}
+function urlFor(source) { return builder.image(source); }
 
-let items = [];
-let activeStaff = [];
-let rawSettings = null;
-
-try {
-  items = await sanityClient.fetch(`*[_type == "menuItem" && isAvailable == true] | order(isFeatured desc, orderPriority desc)`);
-  activeStaff = await sanityClient.fetch(`*[_type == "staffMember" && isOnShift == true]`);
-  rawSettings = await sanityClient.fetch(`*[_type == "siteSettings"][0]`); // Fetch the first configuration document directly
-} catch (error) {
-  console.error("Live database configuration sync interrupted:", error);
-}
-
-// FIXED: Implemented clean fallback conditional evaluation block to bypass compilation error
-const themeSettings = rawSettings ? rawSettings : {
-  title: "Chedings Copycat Cafe",
-  tagline: "Brewing Community & Great Coffee in the heart of Iligan",
-  modeSelection: "light",
-  shadowIntensity: "shadow-xl",
-  borderRadius: "rounded-3xl"
-};
+// Fetch pre-processed clean collections from our isolated query layer
+const { items, activeStaff, themeSettings } = await fetchStoreData();
 
 const categories = [
   { id: 'coffee', name: '☕ Our Drinks' },
@@ -37,19 +21,13 @@ const categories = [
   { id: 'meals', name: '🍳 All-Day Plates' }
 ];
 
-// Isolate our dynamic recommended products for the specialized showcase block safely
 const recommendedItems = items.filter(item => item.isRecommended === true);
-
-const structuredMenu = categories.map(cat => {
-  return {
-    ...cat,
-    products: items.filter(item => item.category === cat.id)
-  };
-}).filter(cat => cat.products.length > 0);
+const structuredMenu = categories.map(cat => ({
+  ...cat,
+  products: items.filter(item => item.category === cat.id)
+})).filter(cat => cat.products.length > 0);
 
 const isDark = themeSettings.modeSelection === 'dark';
-const contactNum = "09171234567";
-const locationInfo = "Tibanga Highway, near MSU-IIT, Iligan City";
 ---
 
 <!DOCTYPE html>
@@ -61,67 +39,31 @@ const locationInfo = "Tibanga Highway, near MSU-IIT, Iligan City";
     <link rel="preconnect" href="https://googleapis.com">
     <link rel="preconnect" href="https://gstatic.com" crossorigin>
     <link href="https://googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .font-serif { font-family: 'Playfair Display', serif; }
-        .scrollbar-none::-webkit-scrollbar { display: none; }
-        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
+    <style>body { font-family: 'Plus Jakarta Sans', sans-serif; } .font-serif { font-family: 'Playfair Display', serif; } .scrollbar-none::-webkit-scrollbar { display: none; }</style>
 </head>
-<body class={`antialiased selection:bg-amber-200 transition-colors duration-300 min-h-screen flex flex-col justify-between ${isDark ? 'bg-stone-950 text-stone-200' : 'bg-[#FAF9F5] text-stone-800'}`}>
+<body class={`antialiased selection:bg-amber-200 min-h-screen flex flex-col justify-between ${isDark ? 'bg-stone-950 text-stone-200' : 'bg-[#FAF9F5] text-stone-800'}`}>
 
-    <!-- Top Editorial Header Navigation -->
-    <header class={`backdrop-blur-xl border-b sticky top-0 z-50 transition-all ${isDark ? 'bg-stone-950/90 border-stone-800/80' : 'bg-[#FAF9F5]/90 border-stone-200/60'}`}>
-        <div class="max-w-6xl mx-auto px-6 py-5 flex justify-between items-center">
-            <div class="flex flex-col">
-                <span class="font-serif text-2xl font-black tracking-tight text-amber-900">{themeSettings.title}</span>
-                <span class="text-[9px] uppercase font-bold tracking-widest text-stone-400 mt-0.5">Locally-Owned • Iligan City</span>
-            </div>
-            <a href={`tel:${contactNum}`} class="bg-amber-950 text-amber-100 hover:bg-amber-900 px-6 py-3 rounded-full font-bold text-xs tracking-wider uppercase transition shadow-sm">
-                Order Ahead
-            </a>
-        </div>
-    </header>
+    <Navbar title={themeSettings.title} isDark={isDark} />
+    <ShiftBanner activeStaff={activeStaff} urlFor={urlFor} />
 
-    <!-- Shift Tracker Status Banner -->
-    {activeStaff.length > 0 && (
-    <div class="bg-amber-950 text-amber-100 py-3.5 px-6 border-b border-amber-900/40 text-xs md:text-sm font-medium tracking-wide">
-        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
-            <p>👋 <span class="text-amber-400 font-bold">Behind the Counter:</span> Your coffees are being crafted with care today by <span class="text-white font-bold">{activeStaff.map((staff, i) => `${staff.name}${i < activeStaff.length - 1 ? ', ' : ''}`)}</span></p>
-            <div class="flex -space-x-2 overflow-hidden">
-                {activeStaff.map((staff) => staff.photo && (
-                    <img class="inline-block h-7 w-7 rounded-full ring-2 ring-amber-950 object-cover" src={urlFor(staff.photo).width(64).height(64).url()} alt={staff.name} />
-                ))}
-            </div>
-        </div>
-    </div>
-    )}
-
-    <!-- Tavern Aesthetic Hero Layout Block -->
+    <!-- Hero Showcase Section -->
     <section class="relative bg-gradient-to-b from-stone-100 to-transparent py-24 px-6 text-center border-b border-stone-200/50">
         <div class="max-w-3xl mx-auto">
             <span class="text-xs uppercase font-extrabold tracking-widest text-amber-900 bg-amber-100 px-4 py-1.5 rounded-full">Proudly Serving Iligan City</span>
-            <h2 class="font-serif text-5xl md:text-7xl font-black tracking-tight leading-[1.1] mt-6 mb-8 text-stone-900">
-                {themeSettings.tagline}
-            </h2>
-            <p class="text-base md:text-lg leading-relaxed max-w-xl mx-auto text-stone-600 mb-10">
-                {themeSettings.heroDescription || 'Once a standard blueprint, now a community beacon. Every cup poured supports local development, job skills, and hope right here near MSU-IIT.'}
-            </p>
+            <h2 class="font-serif text-5xl md:text-7xl font-black tracking-tight mt-6 mb-8 text-stone-900">{themeSettings.tagline}</h2>
         </div>
     </section>
 
     <!-- Recommended for the Day Spotlight Board Section -->
     {recommendedItems.length > 0 && (
-      <section class="bg-amber-50/30 border-b border-amber-200/20 py-16 px-4 md:px-6">
+      <section class="bg-amber-50/30 border-b border-amber-200/20 py-16 px-6">
         <div class="max-w-6xl mx-auto">
           <div class="flex items-center gap-3 mb-10 justify-center md:justify-start">
             <span class="text-xl">⚡</span>
             <h3 class="font-serif text-3xl font-black tracking-tight text-stone-900">Recommended for the Day</h3>
           </div>
           <div class="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {recommendedItems.map((p) => (
-              <ProductCard item={p} urlFor={urlFor} themeSettings={themeSettings} />
-            ))}
+            {recommendedItems.map((p) => <ProductCard item={p} urlFor={urlFor} themeSettings={themeSettings} />)}
           </div>
         </div>
       </section>
@@ -129,72 +71,44 @@ const locationInfo = "Tibanga Highway, near MSU-IIT, Iligan City";
 
     <!-- Tabbed Menu Segment -->
     <section id="menu-showcase" class="max-w-6xl w-full mx-auto px-4 md:px-6 py-20 flex-1">
-        <div class="text-center mb-10">
-            <h3 class="font-serif text-3xl md:text-4xl font-black text-stone-900 tracking-tight">Full Store Inventory</h3>
-            <p class="text-stone-400 text-sm mt-1">From bold brews to sweet sips, select a category below to explore.</p>
-        </div>
-
-        <!-- Sticky App-Like Tab Bar Filter System -->
         <div class={`flex justify-start md:justify-center gap-2 overflow-x-auto pb-3 mb-10 sticky top-[78px] z-40 backdrop-blur-md p-1.5 rounded-2xl scrollbar-none ${isDark ? 'bg-stone-950/90' : 'bg-[#FAF9F5]/90'}`}>
-            {structuredMenu.map((cat, index) => (
-                <button 
-                    data-target={`tab-pane-${cat.id}`}
-                    class={`tab-trigger shrink-0 text-xs font-bold px-6 py-3 rounded-full border transition-all duration-200 cursor-pointer ${index === 0 ? 'bg-amber-950 text-amber-100 border-amber-950 shadow-md' : (isDark ? 'bg-stone-900 text-stone-400 border-stone-800' : 'bg-white text-stone-600 border-stone-200')}`}
-                >
-                    {cat.name}
-                </button>
+            {structuredMenu.map((cat, idx) => (
+                <button data-target={`tab-pane-${cat.id}`} class={`tab-trigger shrink-0 text-xs font-bold px-6 py-3 rounded-full border transition-all duration-200 cursor-pointer ${idx === 0 ? 'bg-amber-950 text-amber-100 border-amber-950 shadow-md' : (isDark ? 'bg-stone-900 text-stone-400 border-stone-800' : 'bg-white text-stone-600 border-stone-200')}`}>{cat.name}</button>
             ))}
         </div>
 
-        <!-- Render Tab Panes Grid -->
-        <div class="relative">
-            {structuredMenu.map((cat, index) => (
-                <div 
-                    id={`tab-pane-${cat.id}`} 
-                    class={`tab-pane transition-all duration-300 grid sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8 ${index === 0 ? 'block opacity-100' : 'hidden opacity-0 translate-y-2'}`}
-                >
-                    {cat.products.map((p) => (
-                        <ProductCard item={p} urlFor={urlFor} themeSettings={themeSettings} />
-                    ))}
+        <div>
+            {structuredMenu.map((cat, idx) => (
+                <div id={`tab-pane-${cat.id}`} class={`tab-pane transition-all duration-300 grid sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8 ${idx === 0 ? 'block opacity-100' : 'hidden opacity-0 translate-y-2'}`}>
+                    {cat.products.map((p) => <ProductCard item={p} urlFor={urlFor} themeSettings={themeSettings} />)}
                 </div>
             ))}
         </div>
     </section>
 
-    <!-- Footer Content -->
-    <footer class="bg-stone-900 text-stone-400 py-16 border-t border-stone-800 text-center px-6 text-xs">
-        <div class="max-w-4xl mx-auto">
-            <span class="font-serif text-2xl font-black text-stone-100 block mb-2">{themeSettings.title}</span>
-            <p class="mb-2">📍 {locationInfo}</p>
-            <p class="text-stone-500 mb-6">Open Daily • 8:00 AM - 6:00 PM</p>
-            <div class="h-[1px] bg-stone-800 max-w-xs mx-auto mb-6"></div>
-            <p class="uppercase font-bold tracking-widest text-[9px] opacity-40">&copy; 2026 The Tavern Concept Framework.</p>
-        </div>
+    <footer class="bg-stone-900 text-stone-400 py-12 text-center text-xs">
+        <span class="font-serif text-xl font-black text-stone-100 block mb-2">{themeSettings.title}</span>
+        <p class="uppercase font-bold tracking-widest text-[9px] opacity-40">&copy; 2026 Modular Studio Customizer.</p>
     </footer>
 
-    <!-- Tab Swapping Logic Interaction Script -->
     <script is:inline>
         document.addEventListener('DOMContentLoaded', () => {
             const triggers = document.querySelectorAll('.tab-trigger');
             const panes = document.querySelectorAll('.tab-pane');
-
             triggers.forEach(trigger => {
                 trigger.addEventListener('click', () => {
                     const targetId = trigger.getAttribute('data-target');
-
                     triggers.forEach(t => t.classList.remove('bg-amber-950', 'text-amber-100', 'border-amber-950', 'shadow-md'));
                     panes.forEach(p => p.classList.add('hidden', 'opacity-0', 'translate-y-2'));
-
                     trigger.classList.add('bg-amber-950', 'text-amber-100', 'border-amber-950', 'shadow-md');
-                    
                     const activePane = document.getElementById(targetId);
                     if (activePane) {
                         activePane.classList.remove('hidden');
-                        setTimeout(() => {
-						activePane.classList.remove('opacity-0', 'translate-y-2');
-						activePane.classList.add('opacity-100');
-					}, 30);
-				}
-			});
-		});
-	});	
+                        setTimeout(() => { activePane.classList.remove('opacity-0', 'translate-y-2'); activePane.classList.add('opacity-100'); }, 30);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
