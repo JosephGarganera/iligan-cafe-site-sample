@@ -3,6 +3,7 @@ import { sanityClient } from "./sanity.js";
 
 export async function fetchStoreData() {
   try {
+    // 1. Fetch data arrays independently
     const items =
       (await sanityClient.fetch(
         `*[_type == "menuItem" && isAvailable == true] | order(isFeatured desc, orderPriority desc)`,
@@ -11,10 +12,10 @@ export async function fetchStoreData() {
       (await sanityClient.fetch(
         `*[_type == "staffMember" && isOnShift == true]`,
       )) || [];
-    const settingsArray =
-      (await sanityClient.fetch(`*[_type == "siteSettings"]`)) || [];
 
-    const liveSettings = settingsArray[0] || null;
+    // 2. FIXED: Fetch siteSettings using a flat GROQ object lookup that matches ANY published settings document instantly
+    const liveSettings =
+      (await sanityClient.fetch(`*[_type == "siteSettings"][0]`)) || null;
 
     const themeSettings = {
       title: liveSettings?.title || "Chedings Copycat Cafe",
@@ -23,7 +24,7 @@ export async function fetchStoreData() {
         "Brewing Community & Great Coffee in the heart of Iligan",
       badgeText: liveSettings?.badgeText || "Proudly Serving Iligan City",
       heroDescription: liveSettings?.heroDescription || "",
-      seasonalTheme: liveSettings?.seasonalTheme || "summer", // NEW: Seasonal mapping token
+      seasonalTheme: liveSettings?.seasonalTheme || "summer",
       shadowIntensity: liveSettings?.shadowIntensity || "shadow-xl",
       borderRadius: liveSettings?.borderRadius || "rounded-3xl",
     };
@@ -36,7 +37,8 @@ export async function fetchStoreData() {
       activeStaff: [],
       themeSettings: {
         title: "Chedings Copycat Cafe",
-        tagline: "Brewing Community",
+        tagline: "Brewing Community & Great Coffee in the heart of Iligan",
+        badgeText: "Proudly Serving Iligan City",
         modeSelection: "light",
         shadowIntensity: "shadow-xl",
         borderRadius: "rounded-3xl",
