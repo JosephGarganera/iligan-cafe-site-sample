@@ -2,9 +2,9 @@
 // src/components/ProductCard.astro
 const { item, urlFor, themeSettings } = Astro.props;
 
-const cardShadow = themeSettings.shadowIntensity || 'shadow-xl';
-const cardRadius = themeSettings.borderRadius || 'rounded-3xl';
-const currentSeason = themeSettings.seasonalTheme || 'summer';
+const cardShadow = themeSettings?.shadowIntensity || 'shadow-xl';
+const cardRadius = themeSettings?.borderRadius || 'rounded-3xl';
+const currentSeason = themeSettings?.seasonalTheme || 'summer';
 
 // Seasonal Configuration Color Mapping Matrix
 const styles = {
@@ -61,14 +61,14 @@ const displayTestimonial = item.showTestimonial !== false;
 <div id={`modal-target-${uniqueId}`} class="fixed inset-0 bg-stone-950/80 backdrop-blur-xl z-50 hidden opacity-0 transition-opacity duration-300 items-center justify-center p-4 md:p-6">
     <div class={`relative w-full max-w-4xl max-h-[90vh] md:max-h-[80vh] overflow-y-auto md:overflow-hidden grid md:grid-cols-2 ${cardRadius} ${cardShadow} ${activeStyle.modalBg} ${activeStyle.text} border ${activeStyle.border} transform scale-95 transition-transform duration-300 modal-window`}>
         
-        <!-- Left Column Column Layout: Image Panel -->
+        <!-- Left Column: Image Panel -->
         <div class="relative w-full h-64 md:h-full bg-stone-900 border-b md:border-b-0 md:border-r border-stone-200/10">
             {item.image && (
                 <img src={urlFor(item.image).width(1000).height(1000).url()} alt={item.name} class="w-full h-full object-cover" />
             )}
         </div>
 
-        <!-- Right Column Layout: Structured Options Panel -->
+        <!-- Right Column: Structured Options Panel -->
         <div class="p-8 md:p-10 flex flex-col justify-between h-full overflow-y-auto">
             <div>
                 <div class="flex items-center justify-between gap-4 mb-4">
@@ -128,48 +128,3 @@ const displayTestimonial = item.showTestimonial !== false;
         </div>
     </div>
 </div>
-
-<script is:inline>
-  (() => {
-    // Event listener configuration routing transactions securely to your proxy endpoint link
-    const checkoutBtns = document.querySelectorAll('[data-checkout-btn]');
-    
-    checkoutBtns.forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.getAttribute('data-checkout-btn');
-        const itemName = btn.getAttribute('data-item-name');
-        const itemPrice = parseFloat(btn.getAttribute('data-item-price'));
-        const payChannel = document.getElementById(`pay-method-${id}`).value;
-        
-        btn.innerText = "PROCESSING...";
-        btn.disabled = true;
-
-        const transactionDoc = {
-          _type: 'salesReceipt',
-          receiptId: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
-          timestamp: new Date().toISOString(),
-          paymentMethod: payChannel,
-          totalAmount: itemPrice,
-          itemsList: `1x ${itemName} (₱${itemPrice} PHP) — Frontend Autonomous Checkout Order`
-        };
-
-        try {
-          // FIXED: Pointing directly to your clean local API route to leverage hidden .env key values
-          const response = await fetch(`/api/checkout`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(transactionDoc)
-          });
-
-          if (response.ok) {
-            alert(`✨ Order Placed Successfully!\nTransaction ID: ${transactionDoc.receiptId}`);
-            // Fire messenger confirmation routing parameter tabs
-            window.open(`https://m.me! I just confirmed transaction: ${transactionDoc.receiptId}`, '_blank');
-            window.location.reload();
-          } else {
-            alert("Checkout processing rejected. Check your server variables configuration logs.");
-          }
-        } catch (err) {
-          console.error("Secure POS submit failure:", err);
-          alert("Network connection error encountered compiling orders.");
-            } finally {btn.innerText = "CONFIRM ORDER";btn.disabled = false;}});});})();

@@ -99,10 +99,10 @@ const globalThemeClass = globalStyles[currentSeason] || globalStyles.summer;
         <p class="uppercase font-bold tracking-widest text-[9px]">&copy; 2026 Season Fluid Customizer Stack.</p>
     </footer>
 
-    <!-- Tab & Modal Interactivity JavaScript Controller Script -->
+        <!-- Keep your full HTML markup exactly as it was, just replace the script at the very bottom -->
     <script is:inline>
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. Tab Navigation Toggles
+            // 1. Tab Bar Navigation Category Filter Switches
             const triggers = document.querySelectorAll('.tab-trigger');
             const panes = document.querySelectorAll('.tab-pane');
             triggers.forEach(trigger => {
@@ -119,7 +119,7 @@ const globalThemeClass = globalStyles[currentSeason] || globalStyles.summer;
                 });
             });
 
-            // 2. Split Screen Details Modal Actions
+            // 2. Modals Split Screen Presentation Management
             const modalTriggers = document.querySelectorAll('[data-modal-trigger]');
             modalTriggers.forEach(t => {
                 t.addEventListener('click', () => {
@@ -134,14 +134,63 @@ const globalThemeClass = globalStyles[currentSeason] || globalStyles.summer;
             });
 
             const closeButtons = document.querySelectorAll('[data-modal-close]');
+            const closeModal = (m, win) => {
+                if(win) win.classList.add('scale-95'); m.classList.remove('opacity-100'); m.classList.add('opacity-0'); document.body.style.overflow = '';
+                setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
+            };
             closeButtons.forEach(b => {
                 b.addEventListener('click', () => {
                     const id = b.getAttribute('data-modal-close');
                     const m = document.getElementById(`modal-target-${id}`);
                     const win = m?.querySelector('.modal-window');
-                    if (m) {
-                        if(win) win.classList.add('scale-95'); m.classList.remove('opacity-100'); m.classList.add('opacity-0'); document.body.style.overflow = '';
-                        setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
+                    closeModal(m, win);
+                });
+            });
+
+            // 3. Autonomous Checkout Local API Route Handshake
+            const checkoutBtns = document.querySelectorAll('[data-checkout-btn]');
+            checkoutBtns.forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.getAttribute('data-checkout-btn');
+                    const itemName = btn.getAttribute('data-item-name');
+                    const itemPrice = parseFloat(btn.getAttribute('data-item-price'));
+                    const payChannel = document.getElementById(`pay-method-${id}`).value;
+                    
+                    const m = document.getElementById(`modal-target-${id}`);
+                    const win = m?.querySelector('.modal-window');
+                    
+                    btn.innerText = "PROCESSING...";
+                    btn.disabled = true;
+
+                    const transactionDoc = {
+                        _type: 'salesReceipt',
+                        receiptId: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+                        timestamp: new Date().toISOString(),
+                        paymentMethod: payChannel,
+                        totalAmount: itemPrice,
+                        itemsList: `1x ${itemName} (₱${itemPrice} PHP) — Frontend Autonomous Checkout Order`
+                    };
+
+                    try {
+                        const response = await fetch(`/api/checkout`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(transactionDoc)
+                        });
+
+                        if (response.ok) {
+                            alert(`✨ Order Placed Successfully!\nTransaction ID: ${transactionDoc.receiptId}`);
+                            closeModal(m, win);
+                            window.open(`https://m.me! I just confirmed transaction: ${transactionDoc.receiptId}`, '_blank');
+                            window.location.reload();
+                        } else {
+                            alert("Checkout write error. Check server variables.");
+                        }
+                    } catch (err) {
+                        console.error("POS transaction failed:", err);
+                    } finally {
+                        btn.innerText = "CONFIRM ORDER";
+                        btn.disabled = false;
                     }
                 });
             });
