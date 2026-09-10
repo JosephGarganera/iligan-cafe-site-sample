@@ -7,7 +7,6 @@ const authenticatedClient = createClient({
   apiVersion: "2026-09-10",
   useCdn: false,
   token: import.meta.env.SANITY_WRITE_TOKEN,
-  // FIXED: Instruct Sanity to strictly filter out drafts and stream ONLY published assets
   perspective: "published",
 });
 
@@ -22,11 +21,16 @@ export async function fetchStoreData() {
         `*[_type == "staffMember" && isOnShift == true]`,
       )) || [];
 
-    // Explicit GROQ object lookup targeting the active siteSettings profile
-    const liveSettings =
+    // Fetch the site settings collection list array cleanly
+    const settingsResult =
       (await authenticatedClient.fetch(
-        `*[_type == "siteSettings" && !(_id in path("drafts.**"))][0]`,
-      )) || null;
+        `*[_type == "siteSettings" && !(_id in path("drafts.**"))]`,
+      )) || [];
+
+    // SAFE UNBOXER HOOK: Extracted explicitly to support both direct object and multi-row list queries
+    const liveSettings = Array.isArray(settingsResult)
+      ? settingsResult[0]
+      : settingsResult;
 
     const themeSettings = {
       title: liveSettings?.title || "Chedings Copycat Cafe",
