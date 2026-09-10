@@ -6,25 +6,28 @@ const cardShadow = themeSettings.shadowIntensity || 'shadow-xl';
 const cardRadius = themeSettings.borderRadius || 'rounded-3xl';
 const currentSeason = themeSettings.seasonalTheme || 'summer';
 
+// Seasonal Configuration Color Mapping Matrix
 const styles = {
-  summer: { bg: 'bg-[#FAF9F5]', text: 'text-stone-800', primary: 'bg-amber-950 text-amber-100', border: 'border-stone-200/60', modalBg: 'bg-[#FAF9F5]', accentText: 'text-amber-900', badge: 'bg-amber-100 text-amber-950' },
-  rainy: { bg: 'bg-[#1E222A]', text: 'text-slate-100', primary: 'bg-slate-800 text-slate-100', border: 'border-slate-800', modalBg: 'bg-[#212631]', accentText: 'text-sky-400', badge: 'bg-slate-800 text-slate-200' },
-  diyandi: { bg: 'bg-[#FFFDF9]', text: 'text-stone-900', primary: 'bg-red-700 text-white', border: 'border-red-100', modalBg: 'bg-[#FFFDF9]', accentText: 'text-red-700', badge: 'bg-red-50 text-red-700' },
-  holiday: { bg: 'bg-[#14231C]', text: 'text-stone-100', primary: 'bg-red-700 text-white', border: 'border-emerald-900', modalBg: 'bg-[#1A2E25]', accentText: 'text-emerald-400', badge: 'bg-emerald-900 text-emerald-100' }
+  summer: { bg: 'bg-[#FAF9F5]', text: 'text-stone-800', primary: 'bg-amber-950 text-amber-100 hover:bg-amber-900', border: 'border-stone-200/60', modalBg: 'bg-[#FAF9F5]', accentText: 'text-amber-900', badge: 'bg-amber-100 text-amber-950' },
+  rainy: { bg: 'bg-[#1E222A]', text: 'text-slate-100', primary: 'bg-slate-800 text-slate-100 hover:bg-slate-700', border: 'border-slate-800', modalBg: 'bg-[#212631]', accentText: 'text-sky-400', badge: 'bg-slate-800 text-slate-200' },
+  diyandi: { bg: 'bg-[#FFFDF9]', text: 'text-stone-900', primary: 'bg-red-700 text-white hover:bg-red-800', border: 'border-red-100', modalBg: 'bg-[#FFFDF9]', accentText: 'text-red-700', badge: 'bg-red-50 text-red-700' },
+  holiday: { bg: 'bg-[#14231C]', text: 'text-stone-100', primary: 'bg-red-700 text-white hover:bg-red-600', border: 'border-emerald-900', modalBg: 'bg-[#1A2E25]', accentText: 'text-emerald-400', badge: 'bg-emerald-900 text-emerald-100' }
 };
 
 const activeStyle = styles[currentSeason] || styles.summer;
 const isFeatured = item.isFeatured === true;
 const starsArray = Array.from({ length: item.rating || 5 });
+
+// Generate a clean alphanumeric ID for individual product data references
 const uniqueId = item._id ? item._id.replace(/[^a-zA-Z0-9]/g, "") : Math.random().toString(36).substring(7);
 
-// Read user dashboard visibility parameters natively (Defaulting to true for absolute safety)
+// Enforce client visibility preferences toggled in the Sanity Backend
 const displayCaffeine = item.showCaffeine !== false;
 const displayRating = item.showRating !== false;
 const displayTestimonial = item.showTestimonial !== false;
 ---
 
-<!-- Product Card Element Grid -->
+<!-- Product Card Layout Grid -->
 <div class={`overflow-hidden flex flex-col justify-between group transition-all duration-300 border ${cardShadow} ${cardRadius} ${activeStyle.bg} ${activeStyle.border} ${activeStyle.text} ${isFeatured ? 'md:col-span-2 ring-1 ring-amber-700/20' : ''}`}>
     <div data-modal-trigger={uniqueId} class="relative overflow-hidden aspect-video cursor-pointer">
         {item.image ? (
@@ -33,20 +36,18 @@ const displayTestimonial = item.showTestimonial !== false;
             <div class="w-full h-full flex items-center justify-center text-stone-400 text-xs font-medium">No Image</div>
         )}
         {isFeatured && <span class="absolute top-4 left-4 bg-amber-950 text-amber-100 font-sans font-bold text-[9px] tracking-widest uppercase px-3 py-1 rounded-full">Featured</span>}
-        <span class={`absolute top-4 right-4 font-serif font-black px-4 py-1.5 rounded-xl text-md shadow-xs bg-white/95 text-stone-950 border border-stone-200/30`}>
+        <span class="absolute top-4 right-4 font-serif font-black px-4 py-1.5 rounded-xl text-md shadow-xs bg-white/95 text-stone-950 border border-stone-200/30">
             ₱{item.price}
         </span>
     </div>
 
     <div class="p-8 flex-1 flex flex-col justify-between">
         <div>
-            <!-- VISIBILITY RULE: Ratings Control Switch -->
             {displayRating && (
               <div class="flex items-center gap-1 mb-2 text-amber-500 text-xs">
                 {starsArray.map(() => <span>★</span>)}
               </div>
             )}
-            
             <h5 class="font-serif text-2xl font-black tracking-tight mb-2">{item.name}</h5>
             <p class="text-sm opacity-80 leading-relaxed mb-6 line-clamp-2">{item.description}</p>
         </div>
@@ -56,22 +57,21 @@ const displayTestimonial = item.showTestimonial !== false;
     </div>
 </div>
 
-<!-- ADVANCED DYNAMIC SPLIT-SCREEN POPUP MODAL -->
+<!-- ADVANCED SEASONAL SPLIT-SCREEN POPUP MODAL CONTAINER -->
 <div id={`modal-target-${uniqueId}`} class="fixed inset-0 bg-stone-950/80 backdrop-blur-xl z-50 hidden opacity-0 transition-opacity duration-300 items-center justify-center p-4 md:p-6">
     <div class={`relative w-full max-w-4xl max-h-[90vh] md:max-h-[80vh] overflow-y-auto md:overflow-hidden grid md:grid-cols-2 ${cardRadius} ${cardShadow} ${activeStyle.modalBg} ${activeStyle.text} border ${activeStyle.border} transform scale-95 transition-transform duration-300 modal-window`}>
         
-        <!-- Left Side: Image Showcase -->
+        <!-- Left Column Column Layout: Image Panel -->
         <div class="relative w-full h-64 md:h-full bg-stone-900 border-b md:border-b-0 md:border-r border-stone-200/10">
             {item.image && (
                 <img src={urlFor(item.image).width(1000).height(1000).url()} alt={item.name} class="w-full h-full object-cover" />
             )}
         </div>
 
-        <!-- Right Side: Structured Details Panel -->
+        <!-- Right Column Layout: Structured Options Panel -->
         <div class="p-8 md:p-10 flex flex-col justify-between h-full overflow-y-auto">
             <div>
                 <div class="flex items-center justify-between gap-4 mb-4">
-                    <!-- VISIBILITY RULE: Modal Ratings Control Switch -->
                     {displayRating ? (
                       <div class="flex items-center gap-1 text-amber-500 text-xs">
                           {starsArray.map(() => <span>★</span>)}
@@ -84,34 +84,92 @@ const displayTestimonial = item.showTestimonial !== false;
 
                 <h4 class="font-serif text-3xl md:text-4xl font-black tracking-tight mb-2 leading-none">{item.name}</h4>
                 
-                <!-- VISIBILITY RULE: Caffeine Content Control Switch -->
                 {displayCaffeine && item.caffeine && (
                     <span class="text-[10px] font-mono tracking-widest font-bold uppercase opacity-60 block mb-6">
                         ⚡ Caffeine Content: {item.caffeine}
                     </span>
                 )}
 
-                <p class="text-sm opacity-80 leading-relaxed mb-8">{item.description}</p>
+                <p class="text-sm opacity-80 leading-relaxed mb-6">{item.description}</p>
 
-                <!-- VISIBILITY RULE: Testimonial Rendering Control Switch -->
                 {displayTestimonial && item.testimonialText && (
-                    <div class="border-l-4 border-amber-600/40 pl-4 py-2 my-6 bg-stone-500/5 rounded-r-xl">
+                    <div class="border-l-4 border-amber-600/40 pl-4 py-2 my-4 bg-stone-500/5 rounded-r-xl">
                         <p class="text-xs italic opacity-70 leading-relaxed">"{item.testimonialText}"</p>
                         {item.testimonialAuthor && (
                             <span class={`text-[10px] font-bold block mt-2 ${activeStyle.accentText}`}>— {item.testimonialAuthor}</span>
                         )}
                     </div>
                 )}
+                
+                <!-- Payment Mode Selection Dropdown Configuration -->
+                <div class="my-6">
+                    <label class="text-[10px] uppercase font-black tracking-wider block mb-2 opacity-60">Select Payment Channel</label>
+                    <select id={`pay-method-${uniqueId}`} class="w-full p-3 rounded-xl border border-stone-400/30 bg-transparent text-sm focus:outline-none focus:border-amber-600">
+                        <option value="gcash">📱 GCash Digital Pay</option>
+                        <option value="cash" selected>💵 Cash on Counter</option>
+                        <option value="maya">💳 Maya Terminal</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="mt-8 grid grid-cols-2 gap-4">
+            <div class="mt-4 grid grid-cols-2 gap-4">
                 <button data-modal-close={uniqueId} class="w-full text-center py-4 border border-stone-400/30 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-stone-500/5 transition cursor-pointer">
-                    Back to Menu
+                    Cancel
                 </button>
-                <a href={`https://m.me! I want to order your ${encodeURIComponent(item.name)}`} target="_blank" class={`w-full block text-center py-4 rounded-xl font-bold text-xs uppercase tracking-wider transition ${activeStyle.primary}`}>
-                    Order via Msg
-                </a>
+                <button 
+                    data-checkout-btn={uniqueId}
+                    data-item-name={item.name}
+                    data-item-price={item.price}
+                    class={`w-full text-center py-4 rounded-xl font-bold text-xs uppercase tracking-wider transition cursor-pointer ${activeStyle.primary}`}
+                >
+                    Confirm Order
+                </button>
             </div>
         </div>
     </div>
 </div>
+
+<script is:inline>
+  (() => {
+    // Event listener configuration routing transactions securely to your proxy endpoint link
+    const checkoutBtns = document.querySelectorAll('[data-checkout-btn]');
+    
+    checkoutBtns.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-checkout-btn');
+        const itemName = btn.getAttribute('data-item-name');
+        const itemPrice = parseFloat(btn.getAttribute('data-item-price'));
+        const payChannel = document.getElementById(`pay-method-${id}`).value;
+        
+        btn.innerText = "PROCESSING...";
+        btn.disabled = true;
+
+        const transactionDoc = {
+          _type: 'salesReceipt',
+          receiptId: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+          timestamp: new Date().toISOString(),
+          paymentMethod: payChannel,
+          totalAmount: itemPrice,
+          itemsList: `1x ${itemName} (₱${itemPrice} PHP) — Frontend Autonomous Checkout Order`
+        };
+
+        try {
+          // FIXED: Pointing directly to your clean local API route to leverage hidden .env key values
+          const response = await fetch(`/api/checkout`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(transactionDoc)
+          });
+
+          if (response.ok) {
+            alert(`✨ Order Placed Successfully!\nTransaction ID: ${transactionDoc.receiptId}`);
+            // Fire messenger confirmation routing parameter tabs
+            window.open(`https://m.me! I just confirmed transaction: ${transactionDoc.receiptId}`, '_blank');
+            window.location.reload();
+          } else {
+            alert("Checkout processing rejected. Check your server variables configuration logs.");
+          }
+        } catch (err) {
+          console.error("Secure POS submit failure:", err);
+          alert("Network connection error encountered compiling orders.");
+            } finally {btn.innerText = "CONFIRM ORDER";btn.disabled = false;}});});})();
