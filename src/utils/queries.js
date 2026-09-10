@@ -13,15 +13,19 @@ export async function fetchStoreData() {
         `*[_type == "staffMember" && isOnShift == true]`,
       )) || [];
 
-    // 2. FIXED: Fetch siteSettings using a flat GROQ object lookup that matches ANY published settings document instantly
+    // 2. Fetch the first published configuration document safely
     const liveSettings =
       (await sanityClient.fetch(`*[_type == "siteSettings"][0]`)) || null;
 
     const themeSettings = {
-      title: liveSettings?.title || "Your Store Name",
-      tagline: liveSettings?.tagline || "Store Tagline",
-      badgeText: liveSettings?.badgeText || "Store Badge Text",
-      heroDescription: liveSettings?.heroDescription || "Hero Description",
+      title: liveSettings?.title || "Chedings Copycat Cafe",
+      tagline:
+        liveSettings?.tagline ||
+        "Brewing Community & Great Coffee in the heart of Iligan",
+      badgeText: liveSettings?.badgeText || "Proudly Serving Iligan City",
+      heroDescription:
+        liveSettings?.heroDescription ||
+        "Welcome to our tech-friendly sanctuary. Enjoy premium items curated carefully by our expert crew.",
       seasonalTheme: liveSettings?.seasonalTheme || "summer",
       shadowIntensity: liveSettings?.shadowIntensity || "shadow-xl",
       borderRadius: liveSettings?.borderRadius || "rounded-3xl",
@@ -34,10 +38,10 @@ export async function fetchStoreData() {
       items: [],
       activeStaff: [],
       themeSettings: {
-        title: "Your Store Name",
-        tagline: "Store Tagline",
-        badgeText: "Store Badge Text",
-        modeSelection: "light",
+        title: "Chedings Copycat Cafe",
+        tagline: "Brewing Community & Great Coffee in the heart of Iligan",
+        badgeText: "Proudly Serving Iligan City",
+        seasonalTheme: "summer",
         shadowIntensity: "shadow-xl",
         borderRadius: "rounded-3xl",
       },
