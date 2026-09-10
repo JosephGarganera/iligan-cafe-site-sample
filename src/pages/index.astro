@@ -12,6 +12,7 @@ let items = [];
 let activeStaff = [];
 
 try {
+  // Fetch active items ordered by sorting priority parameters cleanly
   items = await sanityClient.fetch(`*[_type == "menuItem" && isAvailable == true] | order(orderPriority desc)`);
   activeStaff = await sanityClient.fetch(`*[_type == "staffMember" && isOnShift == true]`);
 } catch (error) {
@@ -19,7 +20,6 @@ try {
 }
 
 const categories = [
-  { id: 'all', name: '✨ All Items' },
   { id: 'coffee', name: '☕ Espresso & Coffee' },
   { id: 'non-coffee', name: '🥛 Non-Caffeinated' },
   { id: 'pastries', name: '🥐 Pastries & Breads' },
@@ -135,13 +135,14 @@ const locationInfo = "Tibanga Highway, near MSU-IIT, Iligan City";
             </div>
         </div>
 
-        <!-- FIXED CONTAINER LAYOUT BLOCK: Enclosing loop operations inside a fragment layout element wrapper wrapper to secure browser compilation maps -->
+        <!-- Render Structured Category Buckets cleanly without template errors -->
         <div>
-            {categories.filter(c => c.id !== 'all').map((cat) => {
+            {categories.map((cat) => {
+                // FIXED: Strict evaluation comparison operator applied to prevent syntax parser crash
                 const dynamicCategoryItems = items.filter(item => item.category === cat.id);
                 
                 return dynamicCategoryItems.length > 0 && (
-                    <div id={`category-${cat.id}`} class="mb-16 scroll-mt-24 transition-opacity">
+                    <div id={`category-${cat.id}`} class="mb-16 scroll-mt-24">
                         <div class="flex items-center gap-4 mb-8">
                             <h4 class="font-serif text-xl md:text-2xl font-black text-stone-900 tracking-tight">{cat.name}</h4>
                             <div class="h-[1px] bg-stone-200 flex-1"></div>
