@@ -14,29 +14,26 @@ let activeStaff = [];
 let rawSettings = null;
 
 try {
-  items = await sanityClient.fetch(`*[_type == "menuItem" && isAvailable == true] | order(orderPriority desc)`);
+  items = await sanityClient.fetch(`*[_type == "menuItem" && isAvailable == true] | order(isFeatured desc, orderPriority desc)`);
   activeStaff = await sanityClient.fetch(`*[_type == "staffMember" && isOnShift == true]`);
-  // Fetch the latest global website customizer values
-  rawSettings = await sanityClient.fetch(`*[_type == "siteSettings"][0]`);
+  rawSettings = await sanityClient.fetch(`*[_type == "siteSettings"]`);
 } catch (error) {
   console.error("Live database configuration sync interrupted:", error);
 }
 
-// Fallback configuration if document settings remain uncreated
-const themeSettings = rawSettings || {
+const themeSettings = rawSettings?.[0] || {
   title: "Chedings Copycat Cafe",
-  tagline: "Locally sourced treats. Crafted for digital builders.",
+  tagline: "Brewing Community & Great Coffee in the heart of Iligan",
   modeSelection: "light",
-  accentColor: "amber",
-  shadowIntensity: "shadow-md",
-  borderRadius: "rounded-xl"
+  shadowIntensity: "shadow-xl",
+  borderRadius: "rounded-3xl"
 };
 
 const categories = [
-  { id: 'coffee', name: '☕ Coffee' },
-  { id: 'non-coffee', name: '🥛 Drinks' },
-  { id: 'pastries', name: '🥐 Breads' },
-  { id: 'meals', name: '🍳 Meals' }
+  { id: 'coffee', name: '☕ Our Drinks' },
+  { id: 'non-coffee', name: '🥛 Sweet Sips' },
+  { id: 'pastries', name: '🥐 Baked Goods' },
+  { id: 'meals', name: '🍳 All-Day Plates' }
 ];
 
 const structuredMenu = categories.map(cat => {
@@ -56,77 +53,92 @@ const locationInfo = "Tibanga Highway, near MSU-IIT, Iligan City";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{themeSettings.title}</title>
+    <title>{themeSettings.title} | Neighborhood Coffee</title>
     <link rel="preconnect" href="https://googleapis.com">
     <link rel="preconnect" href="https://gstatic.com" crossorigin>
-    <link href="https://googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Playfair+Display:ital,wght@0,900;1,600&display=swap" rel="stylesheet">
+    <link href="https://googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .font-serif { font-family: 'Playfair Display', serif; }
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class={`antialiased selection:bg-amber-200 transition-colors duration-300 min-h-screen flex flex-col justify-between ${isDark ? 'bg-stone-950 text-stone-200' : 'bg-[#FAF9F5] text-stone-800'}`}>
 
-    <!-- Header Navigation -->
-    <header class={`backdrop-blur-xl border-b sticky top-0 z-50 transition-all ${isDark ? 'bg-stone-950/80 border-stone-800/80' : 'bg-[#FAF9F5]/70 border-stone-200/50'}`}>
-        <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+    <!-- Top Editorial Header Navigation -->
+    <header class={`backdrop-blur-xl border-b sticky top-0 z-50 transition-all ${isDark ? 'bg-stone-950/90 border-stone-800/80' : 'bg-[#FAF9F5]/90 border-stone-200/60'}`}>
+        <div class="max-w-6xl mx-auto px-6 py-5 flex justify-between items-center">
             <div class="flex flex-col">
-                <span class="font-serif text-xl md:text-2xl font-black tracking-tight text-amber-600">{themeSettings.title}</span>
-                <span class="text-[9px] uppercase font-bold tracking-widest text-stone-400 mt-0.5">Iligan City</span>
+                <span class="font-serif text-2xl font-black tracking-tight text-amber-900">{themeSettings.title}</span>
+                <span class="text-[9px] uppercase font-bold tracking-widest text-stone-400 mt-0.5">Locally-Owned • Iligan City</span>
             </div>
-            <a href={`tel:${contactNum}`} class={`px-5 py-2.5 rounded-full font-bold text-xs tracking-wider uppercase transition shadow-sm ${isDark ? 'bg-amber-400 text-stone-950 hover:bg-amber-300' : 'bg-stone-950 text-stone-100 hover:bg-amber-950'}`}>
-                Call Now
+            <a href={`tel:${contactNum}`} class="bg-amber-950 text-amber-100 hover:bg-amber-900 px-6 py-3 rounded-full font-bold text-xs tracking-wider uppercase transition shadow-sm">
+                Order Ahead
             </a>
         </div>
     </header>
 
-    <!-- Operational Shift Banner -->
+    <!-- Shift Tracker Status Banner -->
     {activeStaff.length > 0 && (
-    <div class={`py-3 px-6 border-b text-xs md:text-sm ${isDark ? 'bg-stone-900 border-stone-800 text-stone-300' : 'bg-emerald-50 border-emerald-100 text-emerald-800'}`}>
-        <div class="max-w-6xl mx-auto flex justify-between items-center gap-3">
-            <p class="font-medium tracking-wide">
-                🟢 <span class="font-bold">Baristas On Duty:</span> {activeStaff.map((staff, i) => `${staff.name}${i < activeStaff.length - 1 ? ', ' : ''}`)}
-            </p>
-            <div class="flex -space-x-1.5 overflow-hidden">
+    <div class="bg-amber-950 text-amber-100 py-3.5 px-6 border-b border-amber-900/40 text-xs md:text-sm font-medium tracking-wide">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <p>👋 <span class="text-amber-400 font-bold">Behind the Counter:</span> Your coffees are being crafted with care today by <span class="text-white font-bold">{activeStaff.map((staff, i) => `${staff.name}${i < activeStaff.length - 1 ? ', ' : ''}`)}</span></p>
+            <div class="flex -space-x-2 overflow-hidden">
                 {activeStaff.map((staff) => staff.photo && (
-                    <img class="inline-block h-6 w-6 rounded-full ring-2 ring-stone-900 object-cover" src={urlFor(staff.photo).width(64).height(64).url()} alt={staff.name} />
+                    <img class="inline-block h-7 w-7 rounded-full ring-2 ring-amber-950 object-cover" src={urlFor(staff.photo).width(64).height(64).url()} alt={staff.name} />
                 ))}
             </div>
         </div>
     </div>
     )}
 
-    <!-- Hero Showcase Section -->
-    <section class="py-16 px-6 text-center max-w-3xl mx-auto">
-        <h2 class="font-serif text-4xl md:text-6xl font-black tracking-tight leading-tight mb-6">
-            {themeSettings.tagline}
-        </h2>
-        <p class={`text-sm md:text-base leading-relaxed max-w-xl mx-auto ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
-            {themeSettings.heroDescription || 'Welcome to our specialized tech-friendly sanctuary. Enjoy premium items curated carefully by our expert crew.'}
-        </p>
+    <!-- Tavern Aesthetic Hero Layout Block (High Contrast Editorial Style) -->
+    <section class="relative bg-gradient-to-b from-stone-100 to-transparent py-24 px-6 text-center border-b border-stone-200/50">
+        <div class="max-w-3xl mx-auto">
+            <span class="text-xs uppercase font-extrabold tracking-widest text-amber-900 bg-amber-100 px-4 py-1.5 rounded-full">Proudly Serving Iligan City</span>
+            <h2 class="font-serif text-5xl md:text-7xl font-black tracking-tight leading-[1.1] mt-6 mb-8 text-stone-900">
+                {themeSettings.tagline}
+            </h2>
+            <p class="text-base md:text-lg leading-relaxed max-w-xl mx-auto text-stone-600 mb-10">
+                {themeSettings.heroDescription || 'Once a standard blueprint, now a community beacon. Every cup poured supports local development, job skills, and hope right here near MSU-IIT.'}
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4 max-w-xs mx-auto sm:max-w-none">
+                <a href="#menu-showcase" class="bg-amber-950 text-amber-100 hover:bg-amber-900 px-8 py-4 rounded-xl font-bold text-sm tracking-wide transition shadow-xl shadow-amber-950/20">
+                    Our Menu Specials
+                </a>
+                <a href="https://m.me" target="_blank" class="bg-white text-stone-800 border border-stone-200 px-8 py-4 rounded-xl font-bold text-sm hover:bg-stone-50 transition">
+                    Start a Pickup Order
+                </a>
+            </div>
+        </div>
     </section>
 
-    <!-- TABBED MENU ENGINE: Completely optimized to feel like a native app on mobile screens -->
-    <section id="menu-showcase" class="max-w-6xl w-full mx-auto px-4 md:px-6 pb-24 flex-1">
-        
-        <!-- Mobile Horizontal Tab Bar (Anchors static to view context on mobile devices) -->
-        <div class={`flex justify-start md:justify-center gap-2 overflow-x-auto pb-4 mb-8 sticky top-[68px] z-40 backdrop-blur-md p-2 rounded-2xl scrollbar-none ${isDark ? 'bg-stone-950/90' : 'bg-[#FAF9F5]/90'}`}>
+    <!-- Tabbed Menu Segment -->
+    <section id="menu-showcase" class="max-w-6xl w-full mx-auto px-4 md:px-6 py-20 flex-1">
+        <div class="text-center mb-10">
+            <h3 class="font-serif text-3xl md:text-4xl font-black text-stone-900 tracking-tight">Serving Up Something for Everyone</h3>
+            <p class="text-stone-400 text-sm mt-1">From bold brews to sweet sips, select a category below to explore.</p>
+        </div>
+
+        <!-- Sticky App-Like Tab Bar Filter System -->
+        <div class={`flex justify-start md:justify-center gap-2 overflow-x-auto pb-3 mb-10 sticky top-[78px] z-40 backdrop-blur-md p-1.5 rounded-2xl scrollbar-none ${isDark ? 'bg-stone-950/90' : 'bg-[#FAF9F5]/90'}`}>
             {structuredMenu.map((cat, index) => (
                 <button 
                     data-target={`tab-pane-${cat.id}`}
-                    class={`tab-trigger shrink-0 text-xs font-bold px-5 py-2.5 rounded-full border transition-all duration-200 shadow-xs cursor-pointer ${index === 0 ? 'bg-amber-600 text-white border-amber-600' : (isDark ? 'bg-stone-900 text-stone-300 border-stone-800' : 'bg-white text-stone-700 border-stone-200')}`}
+                    class={`tab-trigger shrink-0 text-xs font-bold px-6 py-3 rounded-full border transition-all duration-200 cursor-pointer ${index === 0 ? 'bg-amber-950 text-amber-100 border-amber-950 shadow-md' : (isDark ? 'bg-stone-900 text-stone-400 border-stone-800' : 'bg-white text-stone-600 border-stone-200')}`}
                 >
-                    {cat.name} ({cat.products.length})
+                    {cat.name}
                 </button>
             ))}
         </div>
 
-        <!-- Render Structured Group Panes Controlled by our Client Tab Toggles -->
+        <!-- Render Tab Panes Grid -->
         <div class="relative">
             {structuredMenu.map((cat, index) => (
                 <div 
                     id={`tab-pane-${cat.id}`} 
-                    class={`tab-pane transition-all duration-300 grid sm:grid-cols-2 lg:grid-cols-3 gap-6 ${index === 0 ? 'block opacity-100 translate-y-0' : 'hidden opacity-0 translate-y-4'}`}
+                    class={`tab-pane transition-all duration-300 grid sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8 ${index === 0 ? 'block opacity-100' : 'hidden opacity-0 translate-y-2'}`}
                 >
                     {cat.products.map((p) => (
                         <ProductCard item={p} urlFor={urlFor} themeSettings={themeSettings} />
@@ -136,13 +148,18 @@ const locationInfo = "Tibanga Highway, near MSU-IIT, Iligan City";
         </div>
     </section>
 
-    <footer class={`text-center py-12 border-t px-6 text-xs ${isDark ? 'bg-stone-900 border-stone-800 text-stone-500' : 'bg-stone-100 border-stone-200 text-stone-400'}`}>
-        <p class="font-bold mb-1">{themeSettings.title}</p>
-        <p class="mb-4">📍 {locationInfo}</p>
-        <p class="uppercase font-bold tracking-widest text-[9px] opacity-60">&copy; 2026 Studio Customizer Engine.</p>
+    <!-- Footer Content -->
+    <footer class="bg-stone-900 text-stone-400 py-16 border-t border-stone-800 text-center px-6 text-xs">
+        <div class="max-w-4xl mx-auto">
+            <span class="font-serif text-2xl font-black text-stone-100 block mb-2">{themeSettings.title}</span>
+            <p class="mb-2">📍 {locationInfo}</p>
+            <p class="text-stone-500 mb-6">Open Daily • 8:00 AM - 6:00 PM</p>
+            <div class="h-[1px] bg-stone-800 max-w-xs mx-auto mb-6"></div>
+            <p class="uppercase font-bold tracking-widest text-[9px] opacity-40">&copy; 2026 The Tavern Concept Framework.</p>
+        </div>
     </footer>
 
-    <!-- Native Interaction Switching Script (Runs client-side instantly for lightning-fast tab shifts) -->
+    <!-- Tab Swapping Logic Interaction Script -->
     <script is:inline>
         document.addEventListener('DOMContentLoaded', () => {
             const triggers = document.querySelectorAll('.tab-trigger');
@@ -152,28 +169,18 @@ const locationInfo = "Tibanga Highway, near MSU-IIT, Iligan City";
                 trigger.addEventListener('click', () => {
                     const targetId = trigger.getAttribute('data-target');
 
-                    // Reset active states for all tabs
-                    triggers.forEach(t => {
-                        t.classList.remove('bg-amber-600', 'text-white', 'border-amber-600');
-                    });
-                    
-                    // Hide all content panes safely
-                    panes.forEach(p => {
-                        p.classList.add('hidden', 'opacity-0', 'translate-y-4');
-                        p.classList.remove('block', 'opacity-100', 'translate-y-0');
-                    });
+                    triggers.forEach(t => t.classList.remove('bg-amber-950', 'text-amber-100', 'border-amber-950', 'shadow-md'));
+                    panes.forEach(p => p.classList.add('hidden', 'opacity-0', 'translate-y-2'));
 
-                    // Highlight the chosen button tab state
-                    trigger.classList.add('bg-amber-600', 'text-white', 'border-amber-600');
+                    trigger.classList.add('bg-amber-950', 'text-amber-100', 'border-amber-950', 'shadow-md');
                     
-                    // Activate and fade-in the targeted container panel view
                     const activePane = document.getElementById(targetId);
                     if (activePane) {
                         activePane.classList.remove('hidden');
                         setTimeout(() => {
-                            activePane.classList.remove('opacity-0', 'translate-y-4');
-                            activePane.classList.add('block', 'opacity-100', 'translate-y-0');
-                        }, 50);
+                            activePane.classList.remove('opacity-0', 'translate-y-2');
+                            activePane.classList.add('opacity-100');
+                        }, 30);
                     }
                 });
             });

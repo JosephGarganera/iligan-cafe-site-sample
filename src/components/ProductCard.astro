@@ -2,35 +2,49 @@
 // src/components/ProductCard.astro
 const { item, urlFor, themeSettings } = Astro.props;
 
-// Dynamically bind the design tokens configured in Sanity by the client
 const cardShadow = themeSettings.shadowIntensity || 'shadow-md';
-const cardRadius = themeSettings.borderRadius || 'rounded-xl';
+const cardRadius = themeSettings.borderRadius || 'rounded-3xl';
 const isDark = themeSettings.modeSelection === 'dark';
+const isFeatured = item.isFeatured === true;
 ---
 
-<div class={`overflow-hidden flex flex-col justify-between group transition-all duration-300 border ${cardShadow} ${cardRadius} ${isDark ? 'bg-stone-900 border-stone-800 text-stone-100' : 'bg-white border-stone-200/60 text-stone-800'}`}>
+<div class={`overflow-hidden flex flex-col justify-between group transition-all duration-300 border ${cardShadow} ${cardRadius} ${isFeatured ? 'md:col-span-2 border-amber-700/40 bg-amber-50/20' : (isDark ? 'bg-stone-900 border-stone-800' : 'bg-white border-stone-200/60')}`}>
     <div class="relative overflow-hidden aspect-video bg-stone-100">
         {item.image ? (
             <img 
-                src={urlFor(item.image).width(600).height(400).url()} 
+                src={urlFor(item.image).width(800).height(500).url()} 
                 alt={item.name} 
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
                 loading="lazy"
             />
         ) : (
             <div class="w-full h-full flex items-center justify-center text-stone-400 text-xs font-medium">No Image Uploaded</div>
         )}
-        <span class={`absolute top-4 right-4 font-serif font-black px-3 py-1 rounded-xl text-sm border ${isDark ? 'bg-stone-950/90 text-amber-400 border-stone-800' : 'bg-[#FAF9F5]/90 text-amber-950 border-stone-200/30'}`}>
+        
+        {isFeatured && (
+          <span class="absolute top-4 left-4 bg-amber-800 text-amber-50 font-sans font-bold text-[10px] tracking-widest uppercase px-3 py-1 rounded-full">
+            ⭐ Featured Special
+          </span>
+        )}
+
+        <span class={`absolute top-4 right-4 font-serif font-black px-4 py-1.5 rounded-xl text-md border ${isDark ? 'bg-stone-950/90 text-amber-400 border-stone-800' : 'bg-white/95 text-stone-950 border-stone-200/50'}`}>
             ₱{item.price}
         </span>
     </div>
 
-    <div class="p-6 flex-1 flex flex-col justify-between">
+    <div class="p-8 flex-1 flex flex-col justify-between">
         <div>
-            <h5 class={`text-lg font-extrabold tracking-tight mb-2 transition-colors ${isDark ? 'group-hover:text-amber-400 text-white' : 'group-hover:text-amber-900 text-stone-900'}`}>
-                {item.name}
-            </h5>
-            <p class={`text-sm leading-relaxed mb-6 font-normal ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <h5 class={`font-serif text-2xl font-black tracking-tight transition-colors ${isDark ? 'group-hover:text-amber-400 text-white' : 'group-hover:text-amber-950 text-stone-900'}`}>
+                  {item.name}
+              </h5>
+              {item.caffeine && (
+                <span class="text-[10px] font-bold bg-stone-100 text-stone-500 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                  ⚡ {item.caffeine} Caffeine
+                </span>
+              )}
+            </div>
+            <p class={`text-sm leading-relaxed mb-6 font-normal ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
                 {item.description}
             </p>
         </div>
@@ -38,9 +52,9 @@ const isDark = themeSettings.modeSelection === 'dark';
         <a 
             href={`https://m.me! I would like to order your delicious ${encodeURIComponent(item.name)}`} 
             target="_blank" 
-            class={`w-full block text-center py-3 ${cardRadius} font-bold tracking-wider text-xs uppercase transition duration-200 ${isDark ? 'bg-amber-400 text-stone-950 hover:bg-amber-300' : 'bg-stone-950 text-stone-100 hover:bg-amber-950'}`}
+            class={`w-full block text-center py-4 ${cardRadius} font-sans font-bold tracking-wider text-xs uppercase transition duration-200 ${isDark ? 'bg-amber-400 text-stone-950 hover:bg-amber-300' : 'bg-amber-950 text-amber-100 hover:bg-amber-900'}`}
         >
-            Order via Messenger
+            Order Ahead
         </a>
     </div>
 </div>
