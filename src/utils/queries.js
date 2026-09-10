@@ -1,20 +1,18 @@
 // src/utils/queries.js
 import { createClient } from "@sanity/client";
 
-// Create an authenticated client instance with explicit credentials to bypass data locks
 const authenticatedClient = createClient({
   projectId: "pd1a3die",
   dataset: "production",
   apiVersion: "2026-09-10",
-  useCdn: false, // CDN must be disabled to pull your freshly published changes instantly
-
-  // FIXED: Using our secure environment token proxy mapping natively on the server layer
+  useCdn: false,
   token: import.meta.env.SANITY_WRITE_TOKEN,
+  // FIXED: Instruct Sanity to strictly filter out drafts and stream ONLY published assets
+  perspective: "published",
 });
 
 export async function fetchStoreData() {
   try {
-    // Fetch data arrays independently using the authenticated proxy client channels
     const items =
       (await authenticatedClient.fetch(
         `*[_type == "menuItem" && isAvailable == true] | order(isFeatured desc, orderPriority desc)`,
@@ -23,10 +21,12 @@ export async function fetchStoreData() {
       (await authenticatedClient.fetch(
         `*[_type == "staffMember" && isOnShift == true]`,
       )) || [];
-    const settingsArray =
-      (await authenticatedClient.fetch(`*[_type == "siteSettings"]`)) || [];
 
-    const liveSettings = settingsArray.length > 0 ? settingsArray[0] : null;
+    // Explicit GROQ object lookup targeting the active siteSettings profile
+    const liveSettings =
+      (await authenticatedClient.fetch(
+        `*[_type == "siteSettings" && !(_id in path("drafts.**"))][0]`,
+      )) || null;
 
     const themeSettings = {
       title: liveSettings?.title || "Chedings Copycat Cafe",
