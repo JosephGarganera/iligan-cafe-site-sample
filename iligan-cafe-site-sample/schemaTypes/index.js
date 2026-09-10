@@ -1,4 +1,5 @@
 import menuItem from './menuItem'
-import staffMember from './staffMember' // Import the new structural layout
+import staffMember from './staffMember'
+import siteSettings from './siteSettings' // Import customizer properties
 
-export const schemaTypes = [menuItem, staffMember] // Merge both into your array registry
+export const schemaTypes = [menuItem, staffMember, siteSettings]

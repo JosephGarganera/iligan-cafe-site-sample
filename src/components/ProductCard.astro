@@ -1,9 +1,14 @@
 ---
 // src/components/ProductCard.astro
-const { item, urlFor } = Astro.props;
+const { item, urlFor, themeSettings } = Astro.props;
+
+// Dynamically bind the design tokens configured in Sanity by the client
+const cardShadow = themeSettings.shadowIntensity || 'shadow-md';
+const cardRadius = themeSettings.borderRadius || 'rounded-xl';
+const isDark = themeSettings.modeSelection === 'dark';
 ---
 
-<div class="bg-white rounded-3xl border border-stone-200/60 overflow-hidden flex flex-col justify-between group hover:border-amber-800/40 hover:shadow-xl hover:shadow-stone-950/[0.02] transition-all duration-300">
+<div class={`overflow-hidden flex flex-col justify-between group transition-all duration-300 border ${cardShadow} ${cardRadius} ${isDark ? 'bg-stone-900 border-stone-800 text-stone-100' : 'bg-white border-stone-200/60 text-stone-800'}`}>
     <div class="relative overflow-hidden aspect-video bg-stone-100">
         {item.image ? (
             <img 
@@ -15,17 +20,17 @@ const { item, urlFor } = Astro.props;
         ) : (
             <div class="w-full h-full flex items-center justify-center text-stone-400 text-xs font-medium">No Image Uploaded</div>
         )}
-        <span class="absolute top-4 right-4 bg-[#FAF9F5]/90 backdrop-blur-md text-amber-950 font-serif font-black px-3 py-1 rounded-xl text-sm border border-stone-200/30">
+        <span class={`absolute top-4 right-4 font-serif font-black px-3 py-1 rounded-xl text-sm border ${isDark ? 'bg-stone-950/90 text-amber-400 border-stone-800' : 'bg-[#FAF9F5]/90 text-amber-950 border-stone-200/30'}`}>
             ₱{item.price}
         </span>
     </div>
 
     <div class="p-6 flex-1 flex flex-col justify-between">
         <div>
-            <h5 class="text-lg font-extrabold text-stone-900 tracking-tight mb-2 group-hover:text-amber-900 transition-colors">
+            <h5 class={`text-lg font-extrabold tracking-tight mb-2 transition-colors ${isDark ? 'group-hover:text-amber-400 text-white' : 'group-hover:text-amber-900 text-stone-900'}`}>
                 {item.name}
             </h5>
-            <p class="text-stone-500 text-xs md:text-sm leading-relaxed mb-6 font-normal">
+            <p class={`text-sm leading-relaxed mb-6 font-normal ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
                 {item.description}
             </p>
         </div>
@@ -33,7 +38,7 @@ const { item, urlFor } = Astro.props;
         <a 
             href={`https://m.me! I would like to order your delicious ${encodeURIComponent(item.name)}`} 
             target="_blank" 
-            class="w-full block bg-stone-950 text-stone-100 text-center py-3 rounded-xl font-bold tracking-wider text-xs uppercase hover:bg-amber-950 hover:text-white transition duration-200"
+            class={`w-full block text-center py-3 ${cardRadius} font-bold tracking-wider text-xs uppercase transition duration-200 ${isDark ? 'bg-amber-400 text-stone-950 hover:bg-amber-300' : 'bg-stone-950 text-stone-100 hover:bg-amber-950'}`}
         >
             Order via Messenger
         </a>
