@@ -1,4 +1,7 @@
 ---
+Astro.response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+Astro.response.headers.set('Surrogate-Control', 'no-store');
+
 import '../styles/global.css';
 import { fetchStoreData } from '../utils/queries.js';
 import imageUrlBuilder from '@sanity/image-url';
