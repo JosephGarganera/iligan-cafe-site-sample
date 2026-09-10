@@ -9,6 +9,7 @@ export default defineType({
     {name: 'social', title: 'Social Proof & Rating'},
     {name: 'media', title: 'Media Assets'},
     {name: 'status', title: 'Inventory & Sorting'},
+    {name: 'visibility', title: '⚙️ Toggle Visibility'}, // NEW: Dedicated layout control group
   ],
   fields: [
     defineField({
@@ -63,8 +64,6 @@ export default defineType({
       options: {hotspot: true},
       validation: (Rule) => Rule.required(),
     }),
-
-    // NEW SOCIAL PROOF & TESTIMONIAL FIELDS BLOCK
     defineField({
       name: 'rating',
       title: 'Customer Star Rating',
@@ -84,24 +83,47 @@ export default defineType({
       title: 'Testimonial Author Name',
       type: 'string',
       group: 'social',
-      description: 'e.g., Joseph A., MSU-IIT Student',
     }),
     defineField({
       name: 'testimonialText',
       title: 'Short Customer Quote',
       type: 'string',
       group: 'social',
-      description: 'e.g., "The smoothest cold brew in Iligan, hands down!"',
     }),
 
-    // NEW PROMOTIONAL MARQUEE FIELDS
+    // NEW VISIBILITY TOGGLES GRID
+    defineField({
+      name: 'showCaffeine',
+      title: 'Display Caffeine Info?',
+      type: 'boolean',
+      group: 'visibility',
+      description: 'Turn off to hide the caffeine badge on both the card and the modal.',
+      initialValue: true,
+    }),
+    defineField({
+      name: 'showRating',
+      title: 'Display Star Ratings?',
+      type: 'boolean',
+      group: 'visibility',
+      description: 'Turn off to hide the gold stars from the client view completely.',
+      initialValue: true,
+    }),
+    defineField({
+      name: 'showTestimonial',
+      title: 'Display Customer Testimonial Quote?',
+      type: 'boolean',
+      group: 'visibility',
+      description:
+        'Turn off to temporarily hide the review block layout without deleting the text fields.',
+      initialValue: true,
+    }),
+
+    // PROMOTIONAL MODIFIERS
     defineField({
       name: 'isRecommended',
       title: '⚡ Feature in "Recommended for the Day"?',
       type: 'boolean',
       group: 'status',
-      description:
-        'Places this product inside the premium daily recommendation banner at the top of the menu.',
       initialValue: false,
     }),
     defineField({
