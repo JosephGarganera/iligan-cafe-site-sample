@@ -1,0 +1,94 @@
+---
+import '../styles/global.css';
+import { sanityClient } from '../utils/sanity.js';
+
+// 1. Fetch live data from Sanity's free CDN backend using GROQ syntax
+let items = [];
+try {
+  items = await sanityClient.fetch(`*[_type == "menuItem" && isAvailable == true]`);
+} catch (error) {
+  console.error("Sanity API fetch error, fallback active:", error);
+}
+
+// 2. Setup mock fallback data for your initial local machine development preview
+if (items.length === 0) {
+  items = [
+    { name: "Artisanal Espresso", price: 140, description: "Smooth double shot local robusta blend poured over iced premium milk." },
+    { name: "Chedings Cheddar Croissant", price: 110, description: "Flaky, buttery pastry filled with local cheddar accents." }
+  ];
+}
+
+const businessName = "Chedings Copycat Cafe";
+const contactNum = "09171234567";
+const locationInfo = "Tibanga Highway, near MSU-IIT, Iligan City";
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{businessName} | Best Cafe in Iligan City</title>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+
+    <!-- Header Navigation -->
+    <header class="bg-white/80 backdrop-blur-md shadow-xs sticky top-0 z-50 border-b border-slate-100">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-black text-red-600 tracking-tight">{businessName}</h1>
+            <a href={`tel:${contactNum}`} class="bg-red-600 text-white px-5 py-2 rounded-full font-semibold text-xs tracking-wide uppercase hover:bg-red-700 transition duration-200">Call Shop</a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white py-24 px-4 text-center">
+        <div class="max-w-3xl mx-auto">
+            <span class="text-red-400 font-bold uppercase tracking-widest text-xs px-3 py-1 bg-red-500/10 rounded-full border border-red-500/20">Now Live in Iligan City</span>
+            <h2 class="text-4xl md:text-5xl font-black mt-4 mb-6 tracking-tight leading-tight">Locally Sourced Treats. <br/>Crafted for Digital Builders.</h2>
+            <p class="text-md md:text-lg text-slate-300 mb-8 max-w-xl mx-auto">Stop settling for corporate templates. Support local. Order our fresh menu items below for prompt local dispatch.</p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="#menu" class="bg-white text-slate-900 px-8 py-3.5 rounded-xl font-bold text-sm shadow-xs hover:bg-slate-100 transition duration-200">Browse Menu</a>
+                <a href="https://m.me" target="_blank" class="bg-blue-600 text-white px-8 py-3.5 rounded-xl font-bold text-sm shadow-xs hover:bg-blue-700 transition duration-200">Message on Messenger</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dynamic Menu Section via Headless CMS Data -->
+    <section id="menu" class="max-w-6xl mx-auto px-4 py-20">
+        <div class="text-center mb-12">
+            <h3 class="text-3xl font-extrabold text-slate-900 tracking-tight">On the Counter Today</h3>
+            <p class="text-slate-500 mt-2 text-sm">Real-time store updates pushed straight from our kitchen dashboard.</p>
+        </div>
+        
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {items.map((item) => (
+                <div class="bg-white rounded-2xl shadow-xs border border-slate-100 p-6 flex flex-col justify-between hover:shadow-md hover:border-slate-200 transition duration-300">
+                    <div>
+                        <div class="flex justify-between items-start gap-4 mb-3">
+                            <h4 class="text-lg font-bold text-slate-900 tracking-tight leading-tight">{item.name}</h4>
+                            <span class="bg-red-50 text-red-600 font-black px-3 py-1 rounded-lg text-sm shrink-0">
+                                ₱{item.price}
+                            </span>
+                        </div>
+                        <p class="text-slate-500 text-sm leading-relaxed">{item.description}</p>
+                    </div>
+                    
+                    <a href={`https://m.me?text=Hi! I want to order your ${encodeURIComponent(item.name)}`} target="_blank" class="mt-6 w-full bg-slate-900 text-white text-center py-2.5 rounded-xl font-bold tracking-wide hover:bg-red-600 transition duration-200 text-xs uppercase">
+                        Order via Messenger
+                    </a>
+                </div>
+            ))}
+        </div>
+    </section>
+
+    <!-- Location Footer Context -->
+    <section class="bg-white border-t border-slate-100 py-16 px-4">
+        <div class="max-w-4xl mx-auto text-center">
+            <h3 class="text-xl font-bold mb-2">Location & Hours</h3>
+            <p class="text-slate-600 text-sm mb-1">📍 {locationInfo}</p>
+            <p class="text-slate-500 text-xs">Open Daily: 9:00 AM – 8:00 PM</p>
+        </div>
+    </section>
+
+</body>
+</html>
