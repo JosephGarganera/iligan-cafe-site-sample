@@ -1,23 +1,31 @@
 // src/utils/queries.js
-import { sanityClient } from "./sanity.js";
+import { createClient } from "@sanity/client";
+
+// Create an authenticated client instance with explicit credentials to bypass data locks
+const authenticatedClient = createClient({
+  projectId: "pd1a3die",
+  dataset: "production",
+  apiVersion: "2026-09-10",
+  useCdn: false, // CDN must be disabled to pull your freshly published changes instantly
+
+  // FIXED: Using our secure environment token proxy mapping natively on the server layer
+  token: import.meta.env.SANITY_WRITE_TOKEN,
+});
 
 export async function fetchStoreData() {
   try {
-    // 1. Fetch active data objects independently from the database lake
+    // Fetch data arrays independently using the authenticated proxy client channels
     const items =
-      (await sanityClient.fetch(
+      (await authenticatedClient.fetch(
         `*[_type == "menuItem" && isAvailable == true] | order(isFeatured desc, orderPriority desc)`,
       )) || [];
     const activeStaff =
-      (await sanityClient.fetch(
+      (await authenticatedClient.fetch(
         `*[_type == "staffMember" && isOnShift == true]`,
       )) || [];
-
-    // 2. Fetch the settings collection list array
     const settingsArray =
-      (await sanityClient.fetch(`*[_type == "siteSettings"]`)) || [];
+      (await authenticatedClient.fetch(`*[_type == "siteSettings"]`)) || [];
 
-    // 3. FIXED: Extract the absolute first entry index [0] to unwrap the object from its array container!
     const liveSettings = settingsArray.length > 0 ? settingsArray[0] : null;
 
     const themeSettings = {
@@ -34,7 +42,7 @@ export async function fetchStoreData() {
 
     return { items, activeStaff, themeSettings };
   } catch (error) {
-    console.error("Sanity Database Query Exception:", error);
+    console.error("Authenticated Sanity Database Query Exception:", error);
     return {
       items: [],
       activeStaff: [],
