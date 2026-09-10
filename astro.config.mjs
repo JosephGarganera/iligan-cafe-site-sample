@@ -1,5 +1,6 @@
 import { defineConfig } from "astro/config";
 import vercel from "@astrojs/vercel";
+import tailwind from "@astrojs/tailwind"; // Import the official stable integration
 
 export default defineConfig({
   output: "static",
@@ -7,5 +8,7 @@ export default defineConfig({
   adapter: vercel({
     webAnalytics: { enabled: true },
   }),
-  // Restored to pure, clean standard configs! No more overlapping compiler exclusions.
+
+  // Enforces clean utility mapping loops for Tailwind classes
+  integrations: [tailwind()],
 });

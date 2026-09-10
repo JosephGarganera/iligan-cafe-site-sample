@@ -1,5 +1,14 @@
-@import "tailwindcss";
+/* src/styles/global.css */
+@tailwind base;
+@import "tailwindcss/base" font-face; /* Safe Google Font extraction rule */
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-  --font-serif: "Playfair Display", serif;
+/* Keep all your premium design rules below this line */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
