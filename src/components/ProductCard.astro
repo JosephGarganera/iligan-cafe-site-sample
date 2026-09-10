@@ -2,79 +2,104 @@
 // src/components/ProductCard.astro
 const { item, urlFor, themeSettings } = Astro.props;
 
-const cardShadow = themeSettings.shadowIntensity || 'shadow-md';
+const cardShadow = themeSettings.shadowIntensity || 'shadow-xl';
 const cardRadius = themeSettings.borderRadius || 'rounded-3xl';
-const isDark = themeSettings.modeSelection === 'dark';
-const isFeatured = item.isFeatured === true;
+const currentSeason = themeSettings.seasonalTheme || 'summer';
 
-// Build a dynamic star generator array based on the rating number
-const starsCount = item.rating || 5;
-const starsArray = Array.from({ length: starsCount });
+// Seasonal Configuration Color Mapping Matrix
+const styles = {
+  summer: { bg: 'bg-[#FAF9F5]', text: 'text-stone-800', primary: 'bg-amber-950 text-amber-100', border: 'border-stone-200/60', modalBg: 'bg-[#FAF9F5]', accentText: 'text-amber-900', badge: 'bg-amber-100 text-amber-950' },
+  rainy: { bg: 'bg-[#1E222A]', text: 'text-slate-100', primary: 'bg-slate-800 text-slate-100', border: 'border-slate-800', modalBg: 'bg-[#212631]', accentText: 'text-sky-400', badge: 'bg-slate-800 text-slate-200' },
+  diyandi: { bg: 'bg-[#FFFDF9]', text: 'text-stone-900', primary: 'bg-red-700 text-white', border: 'border-red-100', modalBg: 'bg-[#FFFDF9]', accentText: 'text-red-700', badge: 'bg-red-50 text-red-700' },
+  holiday: { bg: 'bg-[#14231C]', text: 'text-stone-100', primary: 'bg-red-700 text-white', border: 'border-emerald-900', modalBg: 'bg-[#1A2E25]', accentText: 'text-emerald-400', badge: 'bg-emerald-900 text-emerald-100' }
+};
+
+const activeStyle = styles[currentSeason] || styles.summer;
+const isFeatured = item.isFeatured === true;
+const starsArray = Array.from({ length: item.rating || 5 });
+const uniqueId = item._id ? item._id.replace(/[^a-zA-Z0-9]/g, "") : Math.random().toString(36).substring(7);
 ---
 
-<div class={`overflow-hidden flex flex-col justify-between group transition-all duration-300 border ${cardShadow} ${cardRadius} ${isFeatured ? 'md:col-span-2 border-amber-700/40 bg-amber-50/15' : (isDark ? 'bg-stone-900 border-stone-800' : 'bg-white border-stone-200/60')}`}>
-    <div class="relative overflow-hidden aspect-video bg-stone-100">
+<!-- Product Card Element Grid -->
+<div class={`overflow-hidden flex flex-col justify-between group transition-all duration-300 border ${cardShadow} ${cardRadius} ${activeStyle.bg} ${activeStyle.border} ${activeStyle.text} ${isFeatured ? 'md:col-span-2 ring-1 ring-amber-700/20' : ''}`}>
+    <div data-modal-trigger={uniqueId} class="relative overflow-hidden aspect-video cursor-pointer">
         {item.image ? (
-            <img 
-                src={urlFor(item.image).width(800).height(500).url()} 
-                alt={item.name} 
-                class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-                loading="lazy"
-            />
+            <img src={urlFor(item.image).width(800).height(500).url()} alt={item.name} class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500" loading="lazy" />
         ) : (
-            <div class="w-full h-full flex items-center justify-center text-stone-400 text-xs font-medium">No Image Uploaded</div>
+            <div class="w-full h-full flex items-center justify-center text-stone-400 text-xs font-medium">No Image</div>
         )}
-        
-        {isFeatured && (
-          <span class="absolute top-4 left-4 bg-amber-950 text-amber-100 font-sans font-bold text-[9px] tracking-widest uppercase px-3 py-1 rounded-full">
-            ⭐ Featured Special
-          </span>
-        )}
-
-        <span class={`absolute top-4 right-4 font-serif font-black px-4 py-1.5 rounded-xl text-md border ${isDark ? 'bg-stone-950/90 text-amber-400 border-stone-800' : 'bg-white/95 text-stone-950 border-stone-200/50'}`}>
+        {isFeatured && <span class="absolute top-4 left-4 bg-amber-950 text-amber-100 font-sans font-bold text-[9px] tracking-widest uppercase px-3 py-1 rounded-full">Featured</span>}
+        <span class={`absolute top-4 right-4 font-serif font-black px-4 py-1.5 rounded-xl text-md shadow-xs bg-white/95 text-stone-950 border border-stone-200/30`}>
             ₱{item.price}
         </span>
     </div>
 
     <div class="p-8 flex-1 flex flex-col justify-between">
         <div>
-            <!-- Star Ratings Layer Integration -->
             <div class="flex items-center gap-1 mb-2 text-amber-500 text-xs">
               {starsArray.map(() => <span>★</span>)}
             </div>
+            <h5 class="font-serif text-2xl font-black tracking-tight mb-2">{item.name}</h5>
+            <p class="text-sm opacity-80 leading-relaxed mb-6 line-clamp-2">{item.description}</p>
+        </div>
+        <button data-modal-trigger={uniqueId} class={`w-full block text-center py-4 ${cardRadius} font-sans font-bold tracking-wider text-xs uppercase transition duration-200 cursor-pointer ${activeStyle.primary}`}>
+            View Details & Order
+        </button>
+    </div>
+</div>
 
-            <div class="flex flex-wrap items-center justify-between gap-4 mb-3">
-              <h5 class={`font-serif text-2xl font-black tracking-tight transition-colors ${isDark ? 'group-hover:text-amber-400 text-white' : 'group-hover:text-amber-950 text-stone-900'}`}>
-                  {item.name}
-              </h5>
-              {item.caffeine && (
-                <span class="text-[10px] font-bold bg-stone-100 text-stone-500 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                  ⚡ {item.caffeine}
-                </span>
-              )}
-            </div>
-            
-            <p class={`text-sm leading-relaxed mb-6 font-normal ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
-                {item.description}
-            </p>
-
-            <!-- Testimonial Asset Injection Layer -->
-            {item.testimonialText && (
-              <div class="border-l-2 border-amber-800/30 pl-4 py-1 my-6 bg-stone-50/50 rounded-r-lg">
-                <p class="text-xs italic text-stone-500 leading-relaxed">"{item.testimonialText}"</p>
-                {item.testimonialAuthor && (
-                  <span class="text-[10px] font-bold text-amber-900 block mt-1">— {item.testimonialAuthor}</span>
-                )}
-              </div>
+<!-- ADVANCED DYNAMIC SPLIT-SCREEN POPUP MODAL (Adapts to Active Season) -->
+<div id={`modal-target-${uniqueId}`} class="fixed inset-0 bg-stone-950/80 backdrop-blur-xl z-50 hidden opacity-0 transition-opacity duration-300 items-center justify-center p-4 md:p-6">
+    <div class={`relative w-full max-w-4xl max-h-[90vh] md:max-h-[80vh] overflow-y-auto md:overflow-hidden grid md:grid-cols-2 ${cardRadius} ${cardShadow} ${activeStyle.modalBg} ${activeStyle.text} border ${activeStyle.border} transform scale-95 transition-transform duration-300 modal-window`}>
+        
+        <!-- Left Side: Image Showcase -->
+        <div class="relative w-full h-64 md:h-full bg-stone-900 border-b md:border-b-0 md:border-r border-stone-200/10">
+            {item.image && (
+                <img src={urlFor(item.image).width(1000).height(1000).url()} alt={item.name} class="w-full h-full object-cover" />
             )}
         </div>
-        
-        <a 
-            href={`https://m.me! I would like to order your delicious ${encodeURIComponent(item.name)}`} 
-            target="_blank" 
-            class={`w-full block text-center py-4 ${cardRadius} font-sans font-bold tracking-wider text-xs uppercase transition duration-200 ${isDark ? 'bg-amber-400 text-stone-950 hover:bg-amber-300' : 'bg-amber-950 text-amber-100 hover:bg-amber-900'}`}
-        >
-            Order Ahead
-        </a>
+
+        <!-- Right Side: Structured Details Panel -->
+        <div class="p-8 md:p-10 flex flex-col justify-between h-full overflow-y-auto">
+            <div>
+                <div class="flex items-center justify-between gap-4 mb-4">
+                    <div class="flex items-center gap-1 text-amber-500 text-xs">
+                        {starsArray.map(() => <span>★</span>)}
+                    </div>
+                    <span class={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${activeStyle.badge}`}>
+                        ₱{item.price} PHP
+                    </span>
+                </div>
+
+                <h4 class="font-serif text-3xl md:text-4xl font-black tracking-tight mb-2 leading-none">{item.name}</h4>
+                
+                {item.caffeine && (
+                    <span class="text-[10px] font-mono tracking-widest font-bold uppercase opacity-60 block mb-6">
+                        ⚡ Caffeine Content: {item.caffeine}
+                    </span>
+                )}
+
+                <p class="text-sm opacity-80 leading-relaxed mb-8">{item.description}</p>
+
+                <!-- Embedded Customer Review Testimonial Area -->
+                {item.testimonialText && (
+                    <div class="border-l-4 border-amber-600/40 pl-4 py-2 my-6 bg-stone-500/5 rounded-r-xl">
+                        <p class="text-xs italic opacity-70 leading-relaxed">"{item.testimonialText}"</p>
+                        {item.testimonialAuthor && (
+                            <span class={`text-[10px] font-bold block mt-2 ${activeStyle.accentText}`}>— {item.testimonialAuthor}</span>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <div class="mt-8 grid grid-cols-2 gap-4">
+                <button data-modal-close={uniqueId} class="w-full text-center py-4 border border-stone-400/30 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-stone-500/5 transition cursor-pointer">
+                    Back to Menu
+                </button>
+                <a href={`https://m.me! I want to order your ${encodeURIComponent(item.name)}`} target="_blank" class={`w-full block text-center py-4 rounded-xl font-bold text-xs uppercase tracking-wider transition ${activeStyle.primary}`}>
+                    Order via Msg
+                </a>
+            </div>
+        </div>
     </div>
 </div>
