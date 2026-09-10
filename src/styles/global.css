@@ -1,10 +1,5 @@
 @import "tailwindcss";
 
-/* Fix: Tell the scanner to explicitly look only inside your authentic frontend paths */
-@source "../components/**/*.astro";
-@source "../pages/**/*.astro";
-@source "../utils/**/*.js";
-
 @theme {
   --font-serif: "Playfair Display", serif;
 }

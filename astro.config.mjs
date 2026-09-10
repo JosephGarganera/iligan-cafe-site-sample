@@ -10,6 +10,15 @@ export default defineConfig({
   }),
 
   vite: {
+    // FIXED: Enforce strict directory isolation boundaries to shield backend folders
+    optimizeDeps: {
+      exclude: ["iligan-cafe-site-sample", ".sanity", "node_modules"],
+    },
+    build: {
+      rollupOptions: {
+        external: ["iligan-cafe-site-sample"],
+      },
+    },
     plugins: [tailwindv4()],
   },
 });
