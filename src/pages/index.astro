@@ -1,9 +1,9 @@
 ---
 import '../styles/global.css';
 import { sanityClient } from '../utils/sanity.js';
-import imageUrlBuilder from '@sanity/image-url'; // Ensures image decoder library is bound
+import imageUrlBuilder from '@sanity/image-url';
 
-// Map the client credentials into Sanity's global image transformer
+// Initialize the Sanity image builder to transform asset references into clean URLs
 const builder = imageUrlBuilder(sanityClient);
 function urlFor(source) {
   return builder.image(source);
@@ -13,42 +13,132 @@ let items = [];
 let activeStaff = [];
 
 try {
+  // Concurrent database fetch query routines sorted by your operational priorities
   items = await sanityClient.fetch(`*[_type == "menuItem" && isAvailable == true] | order(orderPriority desc)`);
   activeStaff = await sanityClient.fetch(`*[_type == "staffMember" && isOnShift == true]`);
 } catch (error) {
-  console.error("Database sync error:", error);
+  console.error("Sanity live database fetch failed:", error);
+}
+
+// Fallback layout arrays for initial staging development check boundaries
+if (items.length === 0) {
+  items = [{ name: "Artisanal Espresso", price: 140, description: "Local blend poured over fresh milk." }];
 }
 
 const businessName = "Chedings Copycat Cafe";
+const contactNum = "09171234567";
+const locationInfo = "Tibanga Highway, near MSU-IIT, Iligan City";
 ---
-<!-- ... (Keep your header layouts completely untouched) ... -->
 
-<!-- Dynamic Menu Layout Section -->
-<section id="menu" class="max-w-6xl mx-auto px-4 py-20">
-    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {items.map((item) => (
-            <div class="bg-white rounded-2xl shadow-xs border border-slate-100 overflow-hidden flex flex-col justify-between hover:shadow-md transition duration-300">
-                
-                <!-- DYNAMIC IMAGE RESOLVER HANDSHAKE -->
-                {item.image ? (
-                    <img 
-                        src={urlFor(item.image).width(600).height(400).url()} 
-                        alt={item.name} 
-                        class="w-full h-48 object-cover"
-                    />
-                ) : (
-                    <div class="w-full h-48 bg-slate-100 flex items-center justify-center text-slate-400 text-xs">No Image Uploaded</div>
-                )}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{businessName} | Best Cafe in Iligan City</title>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
-                <div class="p-6">
-                    <div class="flex justify-between items-start gap-4 mb-3">
-                        <h4 class="text-lg font-bold text-slate-900 tracking-tight">{item.name}</h4>
-                        <span class="bg-red-50 text-red-600 font-black px-3 py-1 rounded-lg text-sm">₱{item.price}</span>
-                    </div>
-                    <p class="text-slate-500 text-sm leading-relaxed mb-4">{item.description}</p>
-                    <a href="https://m.me" target="_blank" class="w-full block bg-slate-900 text-white text-center py-2.5 rounded-xl font-bold text-xs uppercase tracking-wide">Order via Messenger</a>
-                </div>
+    <!-- Header Navigation Bar -->
+    <header class="bg-white/80 backdrop-blur-md shadow-xs sticky top-0 z-50 border-b border-slate-100">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-black text-red-600 tracking-tight">{businessName}</h1>
+            <a href={`tel:${contactNum}`} class="bg-red-600 text-white px-5 py-2 rounded-full font-semibold text-xs tracking-wide uppercase hover:bg-red-700 transition duration-200">Call Shop</a>
+        </div>
+    </header>
+
+    <!-- Dynamic Operational Shift Tracker Widget Component -->
+    {activeStaff.length > 0 && (
+    <div class="bg-emerald-50 border-b border-emerald-100 py-3 px-4 transition-all duration-300">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            <div class="flex items-center gap-3 justify-center sm:justify-start">
+                <span class="relative flex h-3 w-3 shrink-0">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <p class="text-sm text-emerald-800 font-medium">
+                    <strong>Open & Brewing!</strong> On duty behind the counter right now: 
+                    <span class="font-bold underline decoration-emerald-300 ml-1">
+                        {activeStaff.map((staff, index) => (
+                            `${staff.name}${index < activeStaff.length - 1 ? ', ' : ''}`
+                        ))}
+                    </span>
+                </p>
             </div>
-        ))}
+            <div class="flex -space-x-2 overflow-hidden justify-center">
+                {activeStaff.map((staff) => staff.photo && (
+                    <img 
+                        class="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover" 
+                        src={urlFor(staff.photo).width(64).height(64).url()} 
+                        alt={staff.name} 
+                    />
+                ))}
+            </div>
+        </div>
     </div>
-</section>
+    )}
+
+    <!-- Hero Showcase Section -->
+    <section class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white py-24 px-4 text-center">
+        <div class="max-w-3xl mx-auto">
+            <span class="text-red-400 font-bold uppercase tracking-widest text-xs px-3 py-1 bg-red-500/10 rounded-full border border-red-500/20">Now Live in Iligan City</span>
+            <h2 class="text-4xl md:text-5xl font-black mt-4 mb-6 tracking-tight leading-tight">Locally Sourced Treats. <br/>Crafted for Digital Builders.</h2>
+            <p class="text-md md:text-lg text-slate-300 mb-8 max-w-xl mx-auto">Stop settling for corporate templates. Support local. Order our fresh menu items below for prompt local dispatch.</p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="#menu" class="bg-white text-slate-900 px-8 py-3.5 rounded-xl font-bold text-sm shadow-xs hover:bg-slate-100 transition duration-200">Browse Menu</a>
+                <a href="https://m.me" target="_blank" class="bg-blue-600 text-white px-8 py-3.5 rounded-xl font-bold text-sm shadow-xs hover:bg-blue-700 transition duration-200">Message on Messenger</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dynamic Menu Section via Headless CMS Data Layout Grid -->
+    <section id="menu" class="max-w-6xl mx-auto px-4 py-20">
+        <div class="text-center mb-12">
+            <h3 class="text-3xl font-extrabold text-slate-900 tracking-tight">On the Counter Today</h3>
+            <p class="text-slate-500 mt-2 text-sm">Real-time store updates pushed straight from our kitchen dashboard.</p>
+        </div>
+        
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {items.map((item) => (
+                <div class="bg-white rounded-2xl shadow-xs border border-slate-100 overflow-hidden flex flex-col justify-between hover:shadow-md hover:border-slate-200 transition duration-300">
+                    
+                    <!-- Dynamic Product Image Loader Card -->
+                    {item.image ? (
+                        <img 
+                            src={urlFor(item.image).width(600).height(400).url()} 
+                            alt={item.name} 
+                            class="w-full h-48 object-cover"
+                        />
+                    ) : (
+                        <div class="w-full h-48 bg-slate-100 flex items-center justify-center text-slate-400 text-xs">No Image Provided</div>
+                    )}
+
+                    <div class="p-6">
+                        <div class="flex justify-between items-start gap-4 mb-3">
+                            <h4 class="text-lg font-bold text-slate-900 tracking-tight leading-tight">{item.name}</h4>
+                            <span class="bg-red-50 text-red-600 font-black px-3 py-1 rounded-lg text-sm shrink-0">
+                                ₱{item.price}
+                            </span>
+                        </div>
+                        <p class="text-slate-500 text-sm leading-relaxed mb-4">{item.description}</p>
+                        
+                        <a href={`https://m.me! I want to order your ${encodeURIComponent(item.name)}`} target="_blank" class="w-full block bg-slate-900 text-white text-center py-2.5 rounded-xl font-bold tracking-wide hover:bg-red-600 transition duration-200 text-xs uppercase">
+                            Order via Messenger
+                        </a>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </section>
+
+    <!-- Location Footer Context Area -->
+    <section class="bg-white border-t border-slate-100 py-16 px-4">
+        <div class="max-w-4xl mx-auto text-center">
+            <h3 class="text-xl font-bold mb-2">Location & Hours</h3>
+            <p class="text-slate-600 text-sm mb-1">📍 {locationInfo}</p>
+            <p class="text-slate-500 text-xs">Open Daily: 9:00 AM – 8:00 PM</p>
+        </div>
+    </section>
+
+</body>
+</html>
