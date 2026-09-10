@@ -9,7 +9,7 @@ export default defineType({
     {name: 'social', title: 'Social Proof & Rating'},
     {name: 'media', title: 'Media Assets'},
     {name: 'status', title: 'Inventory & Sorting'},
-    {name: 'visibility', title: '⚙️ Toggle Visibility'}, // NEW: Dedicated layout control group
+    {name: 'visibility', title: '⚙️ Toggle Visibility'},
   ],
   fields: [
     defineField({
@@ -17,6 +17,9 @@ export default defineType({
       title: 'Item Name',
       type: 'string',
       group: 'details',
+      description:
+        '📌 Enter the official name of the food or beverage as it should appear on the menu card.',
+      placeholder: 'e.g., Iligan Durian Cold Brew Latte',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -24,6 +27,9 @@ export default defineType({
       title: 'Price (PHP)',
       type: 'number',
       group: 'details',
+      description:
+        '📌 Input the gross retail price in Philippine Pesos. Do not include currency symbols.',
+      placeholder: 'e.g., 165',
       validation: (Rule) => Rule.required().min(0),
     }),
     defineField({
@@ -31,6 +37,9 @@ export default defineType({
       title: 'Caffeine Content (mg)',
       type: 'string',
       group: 'details',
+      description:
+        '📌 Optional: Specify caffeine weight metrics. Leave completely blank for non-coffee items or pastries.',
+      placeholder: 'e.g., 120 mg',
     }),
     defineField({
       name: 'description',
@@ -38,6 +47,10 @@ export default defineType({
       type: 'text',
       group: 'details',
       rows: 2,
+      description:
+        '📌 Provide an appetizing summary highlighting the flavor profiles or artisanal ingredients.',
+      placeholder:
+        'e.g., Double shot premium espresso infused with fresh local durian purée over ice.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -45,6 +58,8 @@ export default defineType({
       title: 'Menu Category',
       type: 'string',
       group: 'status',
+      description:
+        '📌 Select the target menu placement folder. This dictates which dynamic tab the item loads into.',
       options: {
         list: [
           {title: '☕ Espresso & Coffee', value: 'coffee'},
@@ -61,6 +76,8 @@ export default defineType({
       title: 'Product Image',
       type: 'image',
       group: 'media',
+      description:
+        '📌 Upload a crisp, high-resolution photography asset. Recommended aspect ratio is landscape (4:3 or 16:9).',
       options: {hotspot: true},
       validation: (Rule) => Rule.required(),
     }),
@@ -69,6 +86,8 @@ export default defineType({
       title: 'Customer Star Rating',
       type: 'number',
       group: 'social',
+      description:
+        '📌 Choose a default star score metric to display as social proof on the frontend card.',
       options: {
         list: [
           {title: '⭐⭐⭐⭐⭐ 5 Stars', value: 5},
@@ -83,21 +102,26 @@ export default defineType({
       title: 'Testimonial Author Name',
       type: 'string',
       group: 'social',
+      description: '📌 The customer name and identifier who left the compliment review.',
+      placeholder: 'e.g., Joseph G., Tech Consultant',
     }),
     defineField({
       name: 'testimonialText',
       title: 'Short Customer Quote',
       type: 'string',
       group: 'social',
+      description:
+        '📌 A concise, impactful snippet praising the product to boost social conversion loops.',
+      placeholder:
+        'e.g., "The combination of local durian and bold robusta espresso is absolutely genius!"',
     }),
-
-    // NEW VISIBILITY TOGGLES GRID
     defineField({
       name: 'showCaffeine',
       title: 'Display Caffeine Info?',
       type: 'boolean',
       group: 'visibility',
-      description: 'Turn off to hide the caffeine badge on both the card and the modal.',
+      description:
+        '⚙️ Toggle OFF to temporarily hide the caffeine badge from both public view loops.',
       initialValue: true,
     }),
     defineField({
@@ -105,7 +129,7 @@ export default defineType({
       title: 'Display Star Ratings?',
       type: 'boolean',
       group: 'visibility',
-      description: 'Turn off to hide the gold stars from the client view completely.',
+      description: '⚙️ Toggle OFF to hide gold stars from the customer interface completely.',
       initialValue: true,
     }),
     defineField({
@@ -114,16 +138,16 @@ export default defineType({
       type: 'boolean',
       group: 'visibility',
       description:
-        'Turn off to temporarily hide the review block layout without deleting the text fields.',
+        '⚙️ Toggle OFF to temporarily hide the review quote block without deleting the text records.',
       initialValue: true,
     }),
-
-    // PROMOTIONAL MODIFIERS
     defineField({
       name: 'isRecommended',
       title: '⚡ Feature in "Recommended for the Day"?',
       type: 'boolean',
       group: 'status',
+      description:
+        '⚙️ Toggle ON to push this product directly into the daily marquee board spotlight at the top of the menu.',
       initialValue: false,
     }),
     defineField({
@@ -131,6 +155,8 @@ export default defineType({
       title: '⭐ Mark as Featured Special?',
       type: 'boolean',
       group: 'status',
+      description:
+        '⚙️ Toggle ON to give this product a prominent double-column signature design container layout.',
       initialValue: false,
     }),
     defineField({
@@ -138,6 +164,8 @@ export default defineType({
       title: 'Currently in Stock?',
       type: 'boolean',
       group: 'status',
+      description:
+        '⚙️ Toggle OFF to mark as sold-out, which safely hides it from the frontend to manage real-time inventory.',
       initialValue: true,
     }),
     defineField({
@@ -145,6 +173,9 @@ export default defineType({
       title: 'Sorting Priority Order',
       type: 'number',
       group: 'status',
+      description:
+        '📌 Higher numeric values will float this product to the absolute top front of its category tab.',
+      placeholder: 'e.g., 10 (Higher numbers display first)',
       initialValue: 0,
     }),
   ],
