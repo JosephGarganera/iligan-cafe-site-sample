@@ -21,6 +21,7 @@ export async function fetchStoreData() {
       tagline:
         liveSettings?.tagline ||
         "Brewing Community & Great Coffee in the heart of Iligan",
+      badgeText: liveSettings?.badgeText || "Proudly Serving Iligan City", // NEW: Dynamic data token bound here
       modeSelection: liveSettings?.modeSelection || "light",
       shadowIntensity: liveSettings?.shadowIntensity || "shadow-xl",
       borderRadius: liveSettings?.borderRadius || "rounded-3xl",

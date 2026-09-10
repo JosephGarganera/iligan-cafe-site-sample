@@ -46,11 +46,16 @@ const isDark = themeSettings.modeSelection === 'dark';
     <Navbar title={themeSettings.title} isDark={isDark} />
     <ShiftBanner activeStaff={activeStaff} urlFor={urlFor} />
 
-    <!-- Hero Showcase Section -->
+     <!-- Hero Showcase Section -->
     <section class="relative bg-gradient-to-b from-stone-100 to-transparent py-24 px-6 text-center border-b border-stone-200/50">
         <div class="max-w-3xl mx-auto">
-            <span class="text-xs uppercase font-extrabold tracking-widest text-amber-900 bg-amber-100 px-4 py-1.5 rounded-full">Proudly Serving Iligan City</span>
-            <h2 class="font-serif text-5xl md:text-7xl font-black tracking-tight mt-6 mb-8 text-stone-900">{themeSettings.tagline}</h2>
+            <!-- FIXED: Brand text label now reads dynamically straight from Sanity metadata -->
+            <span class="text-xs uppercase font-extrabold tracking-widest text-amber-900 bg-amber-100 px-4 py-1.5 rounded-full">
+                {themeSettings.badgeText}
+            </span>
+            <h2 class="font-serif text-5xl md:text-7xl font-black tracking-tight mt-6 mb-8 text-stone-900">
+                {themeSettings.tagline}
+            </h2>
         </div>
     </section>
 

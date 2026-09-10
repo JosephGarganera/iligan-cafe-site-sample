@@ -90,5 +90,14 @@ export default defineType({
       },
       initialValue: 'rounded-xl',
     }),
+    defineField({
+      name: 'badgeText',
+      title: 'Hero Badge Text Label',
+      type: 'string',
+      group: 'branding',
+      description:
+        'The small capsule text above the main headline (e.g., Proudly Serving Iligan City).',
+      initialValue: 'Proudly Serving Iligan City',
+    }),
   ],
 })
