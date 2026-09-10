@@ -1,0 +1,82 @@
+---
+// src/pages/dashboard/catalog.astro
+import '../../styles/global.css';
+import { getStorefrontData } from '../../utils/queries.js';
+import ItemForm from '../../components/catalog/ItemForm.astro';
+import InventoryList from '../../components/catalog/InventoryList.astro';
+import ThemeCustomizer from '../../components/catalog/ThemeCustomizer.astro';
+
+Astro.response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+
+const url = new URL(Astro.request.url);
+const tenantId = url.searchParams.get('tenant') || 'the-tavern';
+const store = await getStorefrontData(tenantId);
+
+if (store.error) return Astro.redirect('/404-tenant-not-found');
+const { businessName, colorTokens, catalogItems } = store;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Catalog | SaaS Studio</title>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <script src="https://jsdelivr.net"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen antialiased">
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-50 p-6 flex justify-between items-center">
+        <div><h1 class="text-xl font-bold text-white">{businessName} Control Hub</h1></div>
+        <div class="flex gap-3">
+            <a href={`/dashboard?tenant=${tenantId}`} class="border border-slate-700 hover:bg-slate-800 text-slate-300 font-bold text-xs px-4 py-2.5 rounded-lg transition-all">Back to Analytics</a>
+            <a href={`/?tenant=${tenantId}`} target="_blank" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow">View Live Storefront ↗</a>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-6 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 space-y-8">
+            <ItemForm />
+            <InventoryList items={catalogItems} />
+        </div>
+        <div>
+            <ThemeCustomizer tokens={colorTokens} />
+        </div>
+    </main>
+
+    <!-- Global Client Verification Scripts -->
+    <script is:inline define:vars={{ url: import.meta.env.PUBLIC_SUPABASE_URL, key: import.meta.env.PUBLIC_SUPABASE_ANON_KEY, tenantId }}>
+        window.supabaseClient = supabase.createClient(url, key);
+
+        document.getElementById('itemForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveItemBtn');
+            const { data, error } = await window.supabaseClient.from('tenant_entities').insert([{
+                tenant_id: tenantId,
+                title: document.getElementById('itemTitle').value,
+                price: parseFloat(document.getElementById('itemPrice').value),
+                category: document.getElementById('itemCategory').value.toLowerCase().trim(),
+                imageUrl: document.getElementById('itemImageUrl').value || null,
+                description: document.getElementById('itemDescription').value || null,
+                metadata: { isRecommended: true }
+            }]);
+            if (error) alert(error.message); else window.location.reload();
+        });
+
+        document.getElementById('themeForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveThemeBtn');
+            const colorTokens = { primary: document.getElementById('primaryColor').value, bg: document.getElementById('bgColor').value, text: document.getElementById('textColor').value };
+            const { error } = await window.supabaseClient.from('tenant_themes').upsert({ tenant_id: tenantId, color_tokens: colorTokens, updated_at: new Date().toISOString() }, { onConflict: 'tenant_id' });
+            if (error) alert(error.message); else window.location.reload();
+        });
+
+        document.querySelectorAll('[data-delete-btn]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (!confirm("Purge asset entry?")) return;
+                const { error } = await window.supabaseClient.from('tenant_entities').delete().eq('id', btn.getAttribute('data-delete-btn'));
+                if (error) alert(error.message); else window.location.reload();
+            });
+        });
+    </script>
+</body>
+</html>

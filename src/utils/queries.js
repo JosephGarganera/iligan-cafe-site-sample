@@ -1,67 +1,134 @@
 // src/utils/queries.js
-import { createClient } from "@sanity/client";
+import { supabase } from "./supabaseClient";
 
-const authenticatedClient = createClient({
-  projectId: "pd1a3die",
-  dataset: "production",
-  apiVersion: "2026-09-10",
-
-  // CRITICAL CACHE BUSTER: Must be false to completely bypass Sanity's edge cache memory
-  useCdn: false,
-
-  token: import.meta.env.SANITY_WRITE_TOKEN,
-  perspective: "published",
-});
-
-export async function fetchStoreData() {
+/**
+ * Dynamically resolves everything a tenant needs to render its storefront completely.
+ * Feeds data straight down to index.astro with zero upfront caching bottlenecks.
+ * @param {string} tenantId - The unique routing slug parsed from Vercel Edge Middleware
+ */
+export async function getStorefrontData(tenantId) {
   try {
-    const items =
-      (await authenticatedClient.fetch(
-        `*[_type == "menuItem" && isAvailable == true] | order(isFeatured desc, orderPriority desc)`,
-      )) || [];
-    const activeStaff =
-      (await authenticatedClient.fetch(
-        `*[_type == "staffMember" && isOnShift == true]`,
-      )) || [];
+    // 1. Fetch Tenant Profile information to ensure business is active
+    const { data: tenant, error: tenantError } = await supabase
+      .from("tenants")
+      .select("*")
+      .eq("id", tenantId)
+      .single();
 
-    // STRICT FILTER HOOK: Fetch the absolute latest modified siteSettings profile document explicitly
-    const settingsArray =
-      (await authenticatedClient.fetch(
-        `*[_type == "siteSettings"] | order(_updatedAt desc)`,
-      )) || [];
-    const liveSettings = settingsArray.length > 0 ? settingsArray[0] : null;
+    if (tenantError || !tenant) {
+      console.error(
+        `Tenant resolution failure for id: ${tenantId}`,
+        tenantError,
+      );
+      return { error: "Business instance not found." };
+    }
 
-    console.log(
-      "[DEBUG DATA LOOKUP] Detected Active Seasonal Theme Variable:",
-      liveSettings?.seasonalTheme,
-    );
+    // IF THE ACCOUNT IS SUSPENDED, HALT PAYLOAD AND RETURN STATUS IMMEDIATELY
+    if (tenant.status === "suspended") {
+      return {
+        isSuspended: true,
+        businessName: tenant.business_name,
+        subdomain: tenant.subdomain,
+      };
+    }
 
-    const themeSettings = {
-      title: liveSettings?.title || "Chedings Copycat Cafe",
-      tagline:
-        liveSettings?.tagline ||
-        "Brewing Community & Great Coffee in the heart of Iligan",
-      badgeText: liveSettings?.badgeText || "Proudly Serving Iligan City",
-      heroDescription: liveSettings?.heroDescription || "",
-      seasonalTheme: liveSettings?.seasonalTheme || "summer", // Verified data token mapping
-      shadowIntensity: liveSettings?.shadowIntensity || "shadow-xl",
-      borderRadius: liveSettings?.borderRadius || "rounded-3xl",
-    };
+    // 2. Fire concurrent requests for theme configurations and product inventories
+    const [themeResponse, entitiesResponse] = await Promise.all([
+      supabase
+        .from("tenant_themes")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .maybeSingle(), // FIXED: Using maybeSingle() prevents crash if theme row is missing during setup
+      supabase
+        .from("tenant_entities")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .eq("is_visible", true),
+    ]);
 
-    return { items, activeStaff, themeSettings };
-  } catch (error) {
-    console.error("Authenticated Sanity Database Query Exception:", error);
+    if (entitiesResponse.error) throw entitiesResponse.error;
+
+    // 3. Extract data safely with unified fallback structural values
+    const themeData = themeResponse.data || {};
+
     return {
-      items: [],
-      activeStaff: [],
-      themeSettings: {
-        title: "Chedings Copycat Cafe",
-        tagline: "Brewing Community & Great Coffee in the heart of Iligan",
-        badgeText: "Proudly Serving Iligan City",
-        seasonalTheme: "summer",
-        shadowIntensity: "shadow-xl",
-        borderRadius: "rounded-3xl",
+      businessName: tenant.business_name,
+      businessType: tenant.business_type,
+      subdomain: tenant.subdomain,
+      layoutMode: themeData.layout_mode || "grid",
+      navigationStyle: themeData.navigation_style || "tabs",
+      colorTokens: themeData.color_tokens || {
+        primary: "#800020",
+        bg: "#FAF9F5",
+        text: "#1f2937",
       },
+      typographyFamily: themeData.typography_family || "sans",
+      catalogItems: entitiesResponse.data || [],
     };
+  } catch (error) {
+    console.error("Fatal multi-tenant payload fetch failure:", error.message);
+    return { error: "Internal system data lake recovery error." };
+  }
+}
+
+/**
+ * Fetches transaction metrics securely for an authenticated business owner's private dashboard.
+ * Row-Level Security (RLS) automatically ensures no data pollution between businesses.
+ * @param {string} tenantId - The unique business token matching the owner's JWT
+ */
+export async function getTenantDashboardMetrics(tenantId) {
+  const { data: logs, error } = await supabase
+    .from("tenant_ledger")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Dashboard metrics fetch blocked or failed:", error.message);
+    return { metrics: null, ledger: [] };
+  }
+
+  // Programmatic, zero-cost accounting math aggregation
+  const totalRevenue = logs.reduce(
+    (sum, entry) => sum + parseFloat(entry.total_value || 0),
+    0,
+  );
+  const totalInteractions = logs.length;
+
+  return {
+    metrics: {
+      totalRevenue: totalRevenue.toFixed(2),
+      totalInteractions,
+    },
+    ledger: logs,
+  };
+}
+
+/**
+ * Verifies an authenticated user's permission layer inside a specific tenant partition.
+ * Blocks unauthorized cashiers from accessing full owner-only financials.
+ * @param {string} userUuid - The authenticated user's unique identity string from Supabase Auth
+ * @param {string} tenantId - The business space the user is attempting to access
+ */
+export async function verifyUserStaffClearance(userUuid, tenantId) {
+  try {
+    const { data: profile, error } = await supabase
+      .from("staff_profiles")
+      .select("assigned_role, tenant_id")
+      .eq("id", userUuid)
+      .single();
+
+    if (error || !profile) return { authorized: false, role: "none" };
+
+    // Anti-Fraud Check: Ensure staff isn't attempting to read data from a competing business
+    if (profile.tenant_id !== tenantId)
+      return { authorized: false, role: "none" };
+
+    return {
+      authorized: true,
+      role: profile.assigned_role, // Returns 'owner' or 'staff'
+    };
+  } catch (err) {
+    return { authorized: false, role: "none" };
   }
 }

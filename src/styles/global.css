@@ -1,6 +1,7 @@
 /* src/styles/global.css */
+@import url("https://googleapis.com");
+
 @tailwind base;
-@import "tailwindcss/base" font-face; /* Safe Google Font extraction rule */
 @tailwind components;
 @tailwind utilities;
 

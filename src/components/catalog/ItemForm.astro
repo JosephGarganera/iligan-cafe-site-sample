@@ -1,0 +1,33 @@
+---
+// src/components/catalog/ItemForm.astro
+---
+<div class="bg-slate-800/40 border border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
+    <h2 class="text-base font-bold text-white flex items-center gap-2">📦 Create New Offering Element</h2>
+    
+    <form id="itemForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-1">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Product / Service Title</label>
+            <input type="text" id="itemTitle" placeholder="e.g., Iced Matcha Latte" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" />
+        </div>
+        <div class="space-y-1">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Price (PHP)</label>
+            <input type="number" id="itemPrice" step="0.01" placeholder="150.00" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" />
+        </div>
+        <div class="space-y-1">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Structural Category Tag</label>
+            <input type="text" id="itemCategory" placeholder="e.g., drinks, clothes, passes" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" />
+        </div>
+        <div class="space-y-1">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Image Asset URL Address</label>
+            <input type="url" id="itemImageUrl" placeholder="https://unsplash.com..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" />
+        </div>
+        <div class="md:col-span-2 space-y-1">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Item Descriptive Summary</label>
+            <textarea id="itemDescription" rows="3" placeholder="Provide a brief description highlighting features..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors resize-none"></textarea>
+        </div>
+
+        <button type="submit" id="saveItemBtn" class="md:col-span-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-3.5 rounded-xl transition-all cursor-pointer shadow-md">
+            Deploy Item to Storefront Catalog
+        </button>
+    </form>
+</div>

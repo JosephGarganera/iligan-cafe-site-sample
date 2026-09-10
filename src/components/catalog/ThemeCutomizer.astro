@@ -1,0 +1,29 @@
+---
+// src/components/catalog/ThemeCustomizer.astro
+const { tokens } = Astro.props;
+---
+<div class="bg-slate-800/40 border border-slate-800 rounded-2xl p-6 shadow-sm space-y-6 sticky top-28">
+    <h2 class="text-base font-bold text-white flex items-center gap-2">🎨 Theme Identity Customizer</h2>
+    <p class="text-xs text-slate-400 leading-relaxed">Modify your user interface color accents in real time.</p>
+    
+    <form id="themeForm" class="space-y-4">
+        <div class="flex justify-between items-center p-3 rounded-xl bg-slate-950 border border-slate-800">
+            <label class="text-xs font-bold tracking-wide text-slate-300">Primary Brand Accent Color</label>
+            <input type="color" id="primaryColor" value={tokens?.primary || "#3b82f6"} class="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+        </div>
+
+        <div class="flex justify-between items-center p-3 rounded-xl bg-slate-950 border border-slate-800">
+            <label class="text-xs font-bold tracking-wide text-slate-300">Store Background Canvas Color</label>
+            <input type="color" id="bgColor" value={tokens?.bg || "#ffffff"} class="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+        </div>
+
+        <div class="flex justify-between items-center p-3 rounded-xl bg-slate-950 border border-slate-800">
+            <label class="text-xs font-bold tracking-wide text-slate-300">Primary Text Typography Color</label>
+            <input type="color" id="textColor" value={tokens?.text || "#1f2937"} class="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+        </div>
+
+        <button type="submit" id="saveThemeBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-3.5 rounded-xl transition-all cursor-pointer shadow-md">
+            Commit Fluid Styling Layout Overrides
+        </button>
+    </form>
+</div>
