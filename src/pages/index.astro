@@ -12,7 +12,6 @@ let items = [];
 let activeStaff = [];
 
 try {
-  // Fetch active items ordered by sorting priority parameters cleanly
   items = await sanityClient.fetch(`*[_type == "menuItem" && isAvailable == true] | order(orderPriority desc)`);
   activeStaff = await sanityClient.fetch(`*[_type == "staffMember" && isOnShift == true]`);
 } catch (error) {
@@ -25,6 +24,14 @@ const categories = [
   { id: 'pastries', name: '🥐 Pastries & Breads' },
   { id: 'meals', name: '🍳 All-Day Meals' }
 ];
+
+// CRITICAL HOOK: Pre-filter arrays directly on the server to prevent HTML compilation errors
+const structuredMenu = categories.map(cat => {
+  return {
+    ...cat,
+    products: items.filter(item => item.category === cat.id)
+  };
+}).filter(cat => cat.products.length > 0); // Only pass categories that contain items
 
 const businessName = "Chedings Copycat Cafe";
 const contactNum = "09171234567";
@@ -137,35 +144,34 @@ const locationInfo = "Tibanga Highway, near MSU-IIT, Iligan City";
 
         <!-- Render Structured Category Buckets cleanly without template errors -->
         <div>
-            {categories.map((cat) => {
-                // FIXED: Strict evaluation comparison operator applied to prevent syntax parser crash
-                const dynamicCategoryItems = items.filter(item => item.category === cat.id);
-                
-                return dynamicCategoryItems.length > 0 && (
-                    <div id={`category-${cat.id}`} class="mb-16 scroll-mt-24">
-                        <div class="flex items-center gap-4 mb-8">
-                            <h4 class="font-serif text-xl md:text-2xl font-black text-stone-900 tracking-tight">{cat.name}</h4>
-                            <div class="h-[1px] bg-stone-200 flex-1"></div>
-                        </div>
+            {structuredMenu.map((cat) => (
+                <div id={`category-${cat.id}`} class="mb-16 scroll-mt-24">
+                    <div class="flex items-center gap-4 mb-8">
+                        <h4 class="font-serif text-xl md:text-2xl font-black text-stone-900 tracking-tight">{cat.name}</h4>
+                        <div class="h-[1px] bg-stone-200 flex-1"></div>
+                    </div>
 
-                        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {dynamicCategoryItems.map((item) => (
-                                <div class="bg-white rounded-3xl border border-stone-200/60 overflow-hidden flex flex-col justify-between group hover:border-amber-800/40 hover:shadow-xl hover:shadow-stone-950/[0.02] transition-all duration-300">
-                                    
-                                    <div class="relative overflow-hidden aspect-video bg-stone-100">
-                                        {item.image ? (
-                                            <img 
-                                                src={urlFor(item.image).width(600).height(400).url()} 
-                                                alt={item.name} 
-                                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                loading="lazy"
-                                            />
-                                        ) : (
-                                            <div class="w-full h-full flex items-center justify-center text-stone-400 text-xs font-medium">No Image Uploaded</div>
-                                        )}
-                                        <span class="absolute top-4 right-4 bg-[#FAF9F5]/90 backdrop-blur-md text-amber-950 font-serif font-black px-3 py-1 rounded-xl text-sm border border-stone-200/30">
-                                            ₱{item.price}
-                                        </span>
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {cat.products.map((item) => (
+                            <div class="bg-white rounded-3xl border border-stone-200/60 overflow-hidden flex flex-col justify-between group hover:border-amber-800/40 hover:shadow-xl hover:shadow-stone-950/[0.02] transition-all duration-300">
+                                
+                                <div class="relative overflow-hidden aspect-video bg-stone-100">
+                                    {item.image ? (
+                                        <img 
+                                            src={urlFor(item.image).width(600).height(400).url()} 
+                                            alt={item.name} 
+                                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            loading="lazy"
+                                        />
+                                    ) : (
+                                        <div class="w-full h-full flex items-center justify-center text-stone-400 text-xs font-medium">No Image Uploaded</div>
+                                    )}
+                                    <span class="absolute top-4 right-4 bg-[#FAF9F5]/90 backdrop-blur-md text-amber-950 font-serif font-black px-3 py-1 rounded-xl text-sm border border-stone-200/30">
+                                        ₱{item.price}
+                                    </span>
+                                </div>
+
+                                <div class="p-6 flex-1 flex flex-col justify-between">
 {item.name}
 
 
@@ -183,8 +189,7 @@ Order via Messenger
 ))}
 
 
-);
-})}
+))}
 
 
 
