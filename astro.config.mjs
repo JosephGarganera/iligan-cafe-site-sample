@@ -1,9 +1,15 @@
 import { defineConfig } from "astro/config";
-import tailwindcss from "@tailwindcss/vite";
+import tailwind from "@astrojs/tailwind";
+import vercel from "@astrojs/vercel"; // 1. Import the newly installed Vercel adapter mapping node
 
-// Astro v7 native configuration leveraging Tailwind v4 Vite compiler
 export default defineConfig({
-  vite: {
-    plugins: [tailwindcss()],
-  },
+  // Enforces dual configuration modes: Statically pre-builds frontend pages by default,
+  // but spins up dynamic secure cloud environments for server API routes!
+  output: "static",
+
+  adapter: vercel({
+    webAnalytics: { enabled: true },
+  }),
+
+  integrations: [tailwind()],
 });
