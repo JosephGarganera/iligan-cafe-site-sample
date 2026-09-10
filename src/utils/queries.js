@@ -5,7 +5,10 @@ const authenticatedClient = createClient({
   projectId: "pd1a3die",
   dataset: "production",
   apiVersion: "2026-09-10",
+
+  // CRITICAL CACHE BUSTER: Must be false to completely bypass Sanity's edge cache memory
   useCdn: false,
+
   token: import.meta.env.SANITY_WRITE_TOKEN,
   perspective: "published",
 });
@@ -21,16 +24,17 @@ export async function fetchStoreData() {
         `*[_type == "staffMember" && isOnShift == true]`,
       )) || [];
 
-    // Fetch the site settings collection list array cleanly
-    const settingsResult =
+    // STRICT FILTER HOOK: Fetch the absolute latest modified siteSettings profile document explicitly
+    const settingsArray =
       (await authenticatedClient.fetch(
-        `*[_type == "siteSettings" && !(_id in path("drafts.**"))]`,
+        `*[_type == "siteSettings"] | order(_updatedAt desc)`,
       )) || [];
+    const liveSettings = settingsArray.length > 0 ? settingsArray[0] : null;
 
-    // SAFE UNBOXER HOOK: Extracted explicitly to support both direct object and multi-row list queries
-    const liveSettings = Array.isArray(settingsResult)
-      ? settingsResult[0]
-      : settingsResult;
+    console.log(
+      "[DEBUG DATA LOOKUP] Detected Active Seasonal Theme Variable:",
+      liveSettings?.seasonalTheme,
+    );
 
     const themeSettings = {
       title: liveSettings?.title || "Chedings Copycat Cafe",
@@ -39,7 +43,7 @@ export async function fetchStoreData() {
         "Brewing Community & Great Coffee in the heart of Iligan",
       badgeText: liveSettings?.badgeText || "Proudly Serving Iligan City",
       heroDescription: liveSettings?.heroDescription || "",
-      seasonalTheme: liveSettings?.seasonalTheme || "summer",
+      seasonalTheme: liveSettings?.seasonalTheme || "summer", // Verified data token mapping
       shadowIntensity: liveSettings?.shadowIntensity || "shadow-xl",
       borderRadius: liveSettings?.borderRadius || "rounded-3xl",
     };
