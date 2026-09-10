@@ -1,8 +1,8 @@
 import { createClient } from "@sanity/client";
 
 export const sanityClient = createClient({
-  projectId: "pd1a3die", // Replace with your actual project ID from sanity.io/manage
-  dataset: "production", // Default free tier dataset
-  apiVersion: "2026-09-10", // API version locked to today's workspace environment
-  useCdn: true, // True ensures it pulls from fast, free edge-cached CDN nodes
+  projectId: "pd1a3die", // Your live Sanity token (100% lowercase/numbers)
+  dataset: "production", // Free tier production channel
+  apiVersion: "2026-09-10", // Environment configuration date
+  useCdn: false, // 'false' guarantees that changes hit the site instantly!
 });
