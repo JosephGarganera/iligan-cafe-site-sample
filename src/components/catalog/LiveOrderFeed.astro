@@ -15,11 +15,28 @@ const { tenantId, initialOrders = [] } = Astro.props;
       </span>
       <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Live POS Terminal</h3>
     </div>
-    <span class="text-[9px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-900/50 px-2 py-0.5 rounded">CONNECTED</span>
+    <span class="text-[9px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-900/50 px-2 py-0.5 rounded" id="realtime-status-badge">CONNECTING</span>
   </div>
+  
   <div class="p-6">
     <ul id="realtime-ledger-stream" class="space-y-3 max-h-[350px] overflow-y-auto scrollbar-none">
-      <li id="empty-stream-notice" class="text-center py-8 text-xs text-slate-500 font-mono">Awaiting checkout triggers...</li>
+      <!-- FIXED: Hydrate existing active orders on the server instantly upon page generation -->
+      {initialOrders && initialOrders.map((order) => (
+        <li class="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-xs font-mono">
+          <div class="flex flex-col text-left">
+            <span class="text-white font-bold">#{order.id.slice(0,8).toUpperCase()}</span>
+            <span class="text-slate-500 text-[10px]">{new Date(order.created_at).toLocaleTimeString()}</span>
+          </div>
+          <div class="text-right">
+            <span class="text-emerald-400 font-bold block">₱{parseFloat(order.total_value).toFixed(2)}</span>
+            <span class="text-slate-500 text-[9px] uppercase">{order.payload?.payment_channel || 'Cash'}</span>
+          </div>
+        </li>
+      ))}
+
+      {initialOrders.length === 0 && (
+        <li id="empty-stream-notice" class="text-center py-8 text-xs text-slate-500 font-mono">Awaiting checkout triggers...</li>
+      )}
     </ul>
   </div>
 </div>
@@ -29,6 +46,7 @@ const { tenantId, initialOrders = [] } = Astro.props;
 
   document.addEventListener("DOMContentLoaded", () => {
     const container = document.querySelector("[data-realtime-tenant]");
+    const statusBadge = document.getElementById("realtime-status-badge");
     if (!container) return;
 
     const tenantId = container.getAttribute("data-realtime-tenant");
@@ -47,19 +65,29 @@ const { tenantId, initialOrders = [] } = Astro.props;
           const newSale = payload.new;
           const li = document.createElement("li");
           li.className = "p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-xs font-mono animate-in fade-in duration-300";
+          
+          // FIXED: Changed payload_data references to payload to match your schema mappings
           li.innerHTML = `
-            <div class="flex flex-col">
+            <div class="flex flex-col text-left">
               <span class="text-white font-bold">#${newSale.id.slice(0,8).toUpperCase()}</span>
               <span class="text-slate-500 text-[10px]">${new Date(newSale.created_at).toLocaleTimeString()}</span>
             </div>
             <div class="text-right">
               <span class="text-emerald-400 font-bold block">₱${parseFloat(newSale.total_value).toFixed(2)}</span>
-              <span class="text-slate-500 text-[9px] uppercase">${newSale.payload_data?.payment_channel || 'Cash'}</span>
+              <span class="text-slate-500 text-[9px] uppercase">${newSale.payload?.payment_channel || 'Cash'}</span>
             </div>
           `;
           streamList?.insertBefore(li, streamList.firstChild);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED" && statusBadge) {
+          statusBadge.innerText = "CONNECTED";
+          statusBadge.className = "text-[9px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-900/50 px-2 py-0.5 rounded";
+        } else if ((status === "CLOSED" || status === "CHANNEL_ERROR") && statusBadge) {
+          statusBadge.innerText = "DISCONNECTED";
+          statusBadge.className = "text-[9px] font-mono text-rose-400 bg-rose-950/80 border border-rose-900/50 px-2 py-0.5 rounded";
+        }
+      });
   });
 </script>

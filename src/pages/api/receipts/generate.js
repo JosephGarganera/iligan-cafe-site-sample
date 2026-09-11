@@ -1,18 +1,25 @@
 // src/pages/api/receipts/generate.js
 import { createClient } from "@supabase/supabase-js";
 
-export const prerender = false;
+export const prerender = false; // Must run on-demand server-side
 
 export async function POST({ request }) {
   console.log(
-    "------- [BACKGROUND EVENT] Receipt Generation Triggered -------",
+    "------- [BACKGROUND WORKER] Receipt Generation Engine Triggered -------",
   );
 
   try {
     const body = await request.json();
     const { referenceToken, tenantId } = body;
 
-    // 1. Initialize administrative client access
+    if (!referenceToken || !tenantId) {
+      return new Response(
+        JSON.stringify({ error: "Missing required execution parameters." }),
+        { status: 400 },
+      );
+    }
+
+    // 1. Initialize Administrative Supabase Client
     const supabaseUrl =
       import.meta.env.PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
     const serviceRoleKey =
@@ -23,107 +30,121 @@ export async function POST({ request }) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // 2. Fetch transaction payload metrics with explicit column selections
-    const { data: ledgerEntry, error: ledgerError } = await adminSupabase
+    // 2. Fetch the Source-of-Truth Transaction Ledger Row
+    const { data: ledgerRow, error: ledgerError } = await adminSupabase
       .from("tenant_ledger")
-      .select("id, total_value, created_at, payload_data")
-      .eq("reference_token", referenceToken)
+      .select("created_at, total_value, payload_data")
       .eq("tenant_id", tenantId)
+      .eq("reference_token", referenceToken)
       .maybeSingle();
 
-    if (ledgerError || !ledgerEntry)
-      throw new Error("Transaction logging record not found.");
+    if (ledgerError || !ledgerRow) {
+      console.error(
+        `[WORKER FAULT] Could not resolve ledger record for token: ${referenceToken}`,
+      );
+      return new Response(
+        JSON.stringify({ error: "Ledger transaction reference not found." }),
+        { status: 404 },
+      );
+    }
 
-    const items = ledgerEntry.payload_data || {};
-    const grossTotal = parseFloat(ledgerEntry.total_value).toFixed(2);
-    const subtotal = parseFloat(items.subtotal_value || 0).toFixed(2);
-    const tax = parseFloat(items.tax_value || 0).toFixed(2);
-    const dateString = new Date(ledgerEntry.created_at).toLocaleDateString();
+    // Extract itemization matrices from the secure JSONB dimension block
+    const { payload_data, created_at, total_value } = ledgerRow;
+    const dateFormatted = new Date(created_at).toLocaleString("en-PH", {
+      timeZone: "Asia/Manila",
+    });
 
-    console.log(
-      `[GENERATOR COMPILER] Compiling lightweight vector blueprint for Receipt ID: ${ledgerEntry.id}`,
-    );
-
-    // 3. Compile high-fidelity vector markup layout (Optimized for 80mm thermal receipt printing grids)
-    const svgReceiptMarkup = `
-      <svg xmlns="http://w3.org" viewBox="0 0 300 400" width="100%" height="100%">
+    // 3. GENERATE DYNAMIC HIGH-CONTRAST STRUCTURED VECTOR SVG
+    // Tailored for crystal-clear thermal printing or screen review vectors
+    const svgReceipt = `
+      <svg xmlns="http://w3.org" viewBox="0 0 400 600" width="100%" height="100%">
         <style>
-          .txt { font-family: monospace; font-size: 10px; fill: #0f172a; }
-          .bold { font-weight: bold; font-size: 12px; }
-          .right { text-anchor: end; }
-          .line { stroke: #cbd5e1; stroke-width: 1; stroke-dasharray: 4; }
+          .header { font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; fill: #000000; text-anchor: middle; }
+          .meta { font-family: 'Courier New', monospace; font-size: 11px; fill: #555555; }
+          .label { font-family: 'Courier New', monospace; font-size: 12px; fill: #000000; }
+          .value { font-family: 'Courier New', monospace; font-size: 12px; fill: #000000; text-anchor: end; }
+          .line { stroke: #000000; stroke-width: 1; stroke-dasharray: 4; }
+          .total { font-family: 'Courier New', monospace; font-size: 15px; font-weight: bold; fill: #000000; }
         </style>
-        <!-- Background Canvas -->
-        <rect width="300" height="400" fill="#ffffff"/>
         
-        <!-- Document Branding Header -->
-        <text x="150" y="40" class="txt bold" text-anchor="middle">${items.item_name ? "OFFICIAL RECEIPT" : "RECEIPT"}</text>
-        <text x="150" y="55" class="txt" text-anchor="middle">TXN: #${ledgerEntry.id.slice(0, 8).toUpperCase()}</text>
-        <text x="150" y="68" class="txt" text-anchor="middle">Date: ${dateString}</text>
+        <!-- Background Panel Layer -->
+        <rect width="400" height="600" fill="#FFFFFF"/>
         
-        <line x1="20" y1="85" x2="280" y2="85" class="line" />
+        <!-- Header Branding Text Vectors -->
+        <text x="200" y="50" class="header">${tenantId.toUpperCase()} OFFICIAL RECEIPT</text>
+        <text x="200" y="70" class="meta" text-anchor="middle">Powered by OmniPOS SaaS Engine</text>
         
-        <!-- Transaction Line Items Breakdown -->
-        <text x="20" y="110" class="txt bold">${items.item_name || "POS Item"}</text>
-        <text x="20" y="125" class="txt">QTY: ${items.order_quantity || 1} x ₱${parseFloat(items.unit_price || 0).toFixed(2)}</text>
-        <text x="280" y="125" class="txt right">₱${subtotal}</text>
+        <!-- Metadata Context Layout -->
+        <text x="30" y="110" class="meta">DATE: ${dateFormatted}</text>
+        <text x="30" y="130" class="meta">REF: ${referenceToken.slice(0, 18)}...</text>
+        <text x="30" y="150" class="meta">CHAN: ${payload_data?.payment_channel || "Counter"}</text>
         
-        <line x1="20" y1="150" x2="280" y2="150" class="line" />
+        <line x1="30" y1="170" x2="370" y2="170" class="line" />
         
-        <!-- Accounting Summary Blocks Matrix -->
-        <text x="120" y="180" class="txt">Subtotal:</text>
-        <text x="280" y="180" class="txt right">₱${subtotal}</text>
+        <!-- Catalog Item List Headers -->
+        <text x="30" y="195" class="label" font-weight="bold">ITEM DESCRIPTION</text>
+        <text x="280" y="195" class="label" font-weight="bold">QTY</text>
+        <text x="370" y="195" class="value" font-weight="bold">PRICE</text>
         
-        <text x="120" y="195" class="txt">VAT Local Tax (12%):</text>
-        <text x="280" y="195" class="txt right">₱${tax}</text>
+        <line x1="30" y1="210" x2="370" y2="210" class="line" />
         
-        <text x="120" y="220" class="txt bold">GROSS TOTAL:</text>
-        <text x="280" y="220" class="txt bold right">₱${grossTotal}</text>
+        <!-- Dynamic Item Matrix Row Injection -->
+        <text x="30" y="240" class="label">${payload_data?.item_name || "Collection Item"}</text>
+        <text x="280" y="240" class="label">${payload_data?.order_quantity || 1}</text>
+        <text x="370" y="240" class="value">₱${parseFloat(payload_data?.unit_price || 0).toFixed(2)}</text>
         
-        <!-- Footnotes Security Verification Strings -->
-        <line x1="20" y1="250" x2="280" y2="250" class="line" />
-        <text x="150" y="280" class="txt" text-anchor="middle" fill="#64748b">Gateway: ${items.payment_channel || "Counter Cash"}</text>
-        <text x="150" y="295" class="txt bold" text-anchor="middle" fill="#6366f1">Thank you for your patronage!</text>
+        <line x1="30" y1="400" x2="370" y2="400" class="line" />
+        
+        <!-- High-Precision Financial Summary Matrices -->
+        <text x="30" y="430" class="label">Subtotal Breakdown</text>
+        <text x="370" y="430" class="value">₱${parseFloat(payload_data?.subtotal_value || 0).toFixed(2)}</text>
+        
+        <text x="30" y="455" class="label">Tax Component (12% VAT)</text>
+        <text x="370" y="455" class="value">₱${parseFloat(payload_data?.tax_value || 0).toFixed(2)}</text>
+        
+        <line x1="30" y1="480" x2="370" y2="480" class="line" />
+        
+        <text x="30" y="515" class="total">GROSS TOTAL VALUE</text>
+        <text x="370" y="515" class="value total">₱${parseFloat(total_value).toFixed(2)}</text>
+        
+        <!-- Footer Compliance Matrix -->
+        <text x="200" y="565" class="meta" text-anchor="middle">Thank you for supporting Local Businesses!</text>
       </svg>
-    `;
+    `.trim();
 
-    // 4. Stream binary document arrays straight to your storage vault partition bucket
-    const targetStoragePath = `${tenantId}/receipt-${referenceToken}.svg`;
+    // 4. STREAM RAW VECTOR STRAIGHT INTO STORAGE VAULT BUCKETS
+    // Storage Path Target Vector Format: tenant-slug/reference-token.svg
+    const storageFilePath = `${tenantId}/${referenceToken}.svg`;
 
     const { error: uploadError } = await adminSupabase.storage
-      .from("tenant_receipts")
-      .upload(targetStoragePath, svgReceiptMarkup, {
+      .from("receipts")
+      .upload(storageFilePath, svgReceipt, {
         contentType: "image/svg+xml",
-        upsert: true,
+        cacheControl: "31536000",
+        upsert: true, // Prevents duplicate failure loops
       });
 
-    if (uploadError) throw uploadError;
-
-    // 5. Update ledger database record with the clean document path link
-    await adminSupabase
-      .from("tenant_ledger")
-      .update({
-        payload_data: {
-          ...items,
-          receipt_asset_url: `/storage/v1/object/public/tenant-receipts/${targetStoragePath}`,
-        },
-      })
-      .eq("reference_token", referenceToken);
+    if (uploadError) {
+      console.error(
+        `[STORAGE VAULT CRITICAL ERROR] Upload execution failed: ${uploadError.message}`,
+      );
+      return new Response(
+        JSON.stringify({ error: "Storage upload boundary fault." }),
+        { status: 502 },
+      );
+    }
 
     console.log(
-      `------- [BACKGROUND EVENT] Invoice Compiled and Uploaded Safely -------`,
+      `[WORKER SUCCESS] Structural SVG persistent receipt archived cleanly at path: ${storageFilePath}`,
     );
     return new Response(
-      JSON.stringify({ success: true, url: targetStoragePath }),
-      { status: 201 },
+      JSON.stringify({ success: true, path: storageFilePath }),
+      { status: 200 },
     );
   } catch (err) {
-    console.error(
-      "[RECEIPT BATCH ERROR] Background compilation failed:",
-      err.message,
-    );
+    console.error("[WORKER CRITICAL FAULT CATCH]", err.message);
     return new Response(JSON.stringify({ error: err.message }), {
-      status: 400,
+      status: 500,
     });
   }
 }

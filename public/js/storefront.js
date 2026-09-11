@@ -1,111 +1,112 @@
-// public/js/storefront.js
+/**
+ * OmniPOS Platform Storefront Core Client Engine
+ * Handles checkout interactions, idempotency orchestration, and atomic response handling.
+ * Location: public/js/storefront.js
+ */
 document.addEventListener("DOMContentLoaded", () => {
-  // 1. Tab Navigation Swapping
-  const triggers = document.querySelectorAll(".tab-trigger");
-  const panes = document.querySelectorAll(".tab-pane");
+  console.log("🚀 OmniPOS Storefront Client Controller Initialized.");
 
-  triggers.forEach((trigger) => {
-    trigger.addEventListener("click", () => {
-      const targetId = trigger.getAttribute("data-target");
-      triggers.forEach((t) =>
-        t.classList.remove(
-          "accent-bg",
-          "text-white",
-          "border-transparent",
-          "shadow-md",
-        ),
-      );
-      panes.forEach((p) =>
-        p.classList.add("hidden", "opacity-0", "translate-y-2"),
-      );
+  const tenantToken = document.body.getAttribute("data-tenant-token");
+  if (!tenantToken) {
+    console.error(
+      "[CRITICAL SYSTEM FAULT] Tenant contextual safety isolation token missing.",
+    );
+    return;
+  }
 
-      trigger.classList.add(
-        "accent-bg",
-        "text-white",
-        "border-transparent",
-        "shadow-md",
-      );
-      const activePane = targetId ? document.getElementById(targetId) : null;
-      if (activePane) {
-        activePane.classList.remove("hidden");
-        setTimeout(() => {
-          activePane.classList.remove("opacity-0", "translate-y-2");
-          activePane.classList.add("opacity-100");
-        }, 30);
-      }
-    });
-  });
+  // Hook into all active Product Interaction Actions
+  document
+    .querySelectorAll("[data-action='checkout-trigger']")
+    .forEach((button) => {
+      button.addEventListener("click", async (e) => {
+        e.preventDefault();
 
-  // 2. Interactive Product Modals
-  document.querySelectorAll("[data-modal-trigger]").forEach((t) => {
-    t.addEventListener("click", () => {
-      const id = t.getAttribute("data-modal-trigger");
-      const m = document.getElementById(`modal-target-${id}`);
-      if (m) m.classList.remove("hidden");
-    });
-  });
+        const entityId = button.getAttribute("data-entity-id");
+        const quantityInput = document.querySelector(`#qty-${entityId}`);
+        const quantity = quantityInput ? parseInt(quantityInput.value) : 1;
 
-  document.querySelectorAll("[data-close-modal]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-close-modal");
-      const m = document.getElementById(`modal-target-${id}`);
-      if (m) m.classList.add("hidden");
-    });
-  });
+        // FIXED: Safely capture initial text state at the start of the interaction context
+        const initialText = button.innerText;
 
-  // 3. Multi-Tenant Secure Checkout API Bridge (Exploit Free)
-  document.querySelectorAll("[data-checkout-btn]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const entityId = btn.getAttribute("data-checkout-btn");
-      const gatewayElement = document.getElementById(`gateway-${entityId}`);
-      const channelUsed = gatewayElement ? gatewayElement.value : "Counter";
-      const tenantToken =
-        document.body.getAttribute("data-tenant-token") || "default-tenant";
+        // FIXED: Clean syntax guard with proper logical boundaries to catch bad inputs
+        if (!entityId || isNaN(quantity) || quantity <= 0) {
+          button.disabled = true;
+          button.innerText = "Invalid Quantity";
+          button.classList.add("bg-rose-600", "text-white");
 
-      // Disables button interaction instantly to prevent duplicate submission network race loops
-      btn.innerText = "Processing Operational Payload...";
-      btn.disabled = true;
-
-      // Notice: Price data is COMPLETELY omitted here. We transmit only tracking keys!
-      const transactionPayload = {
-        tenantId: tenantToken,
-        entityId: entityId,
-        quantity: 1,
-        channelUsed: channelUsed,
-      };
-
-      console.log(
-        "[FRONTEND SECURE LOG] Transmitting token IDs:",
-        transactionPayload,
-      );
-
-      try {
-        const res = await fetch("/api/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(transactionPayload),
-        });
-
-        const data = await res.json();
-
-        if (res.status === 201 || data.success) {
-          alert(
-            `Transaction Registered Securely!\n\nGross Value (With Tax): ₱${data.grossTotal}\nTracking Token: ${data.trackingId}`,
-          );
-          document
-            .getElementById(`modal-target-${entityId}`)
-            ?.classList.add("hidden");
-        } else {
-          alert(
-            `Pipeline Rejected: ${data.error || "Unknown system anomaly."}`,
-          );
+          setTimeout(() => {
+            button.disabled = false;
+            button.innerText = initialText;
+            button.classList.remove("bg-rose-600", "text-white");
+          }, 3000);
+          return;
         }
-      } catch (err) {
-        alert(`Network Operational Layer Fault: ${err.message}`);
-      } finally {
-        btn.innerText = "Confirm Interaction Workflow";
-        btn.disabled = false;
-      }
+
+        // 1. UI LOCKDOWN STATE (Prevents click-spamming while running async pipelines)
+        button.disabled = true;
+        button.innerText = "Processing Checkout...";
+
+        // 2. GENERATE CLIENT-SIDE IDEMPOTENCY KEY
+        // Fingerprints this specific transaction request so erratic networks don't cause double-charging.
+        let clientOrderToken = localStorage.getItem(`pending_tx_${entityId}`);
+        if (!clientOrderToken) {
+          clientOrderToken = crypto.randomUUID();
+          localStorage.setItem(`pending_tx_${entityId}`, clientOrderToken);
+        }
+
+        try {
+          console.log(
+            `[TRANSACTION PIPELINE] Initiating checkout for item: ${entityId} (Qty: ${quantity})`,
+          );
+
+          // 3. SECURE PAYLOAD DISPATCH
+          const response = await fetch("/api/checkout", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              entityId,
+              quantity,
+              clientOrderToken,
+              channelUsed: "Storefront Web Checkout",
+            }),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || "System rejected transaction.");
+          }
+
+          // 4. TRANSACTION RESOLVED SUCCESSFULLY
+          console.log(
+            `[SUCCESS] Order finalized. Tracking ID: ${result.trackingId}. Total: ₱${result.grossTotal}`,
+          );
+
+          // Wipe the specific idempotency token upon absolute execution confirmation
+          localStorage.removeItem(`pending_tx_${entityId}`);
+
+          // Trigger Success UI feedback
+          button.innerText = `Confirmed! ₱${result.grossTotal}`;
+          button.classList.remove("accent-bg");
+          button.classList.add("bg-emerald-600", "text-white");
+        } catch (error) {
+          console.error("[TRANSACTION FAIL]", error.message);
+
+          // User Alert Mapping
+          button.innerText = "Error: " + error.message;
+          button.classList.remove("accent-bg");
+          button.classList.add("bg-rose-600", "text-white");
+
+          // Release lock state context so user can fix and retry cleanly if desired
+          setTimeout(() => {
+            button.disabled = false;
+            button.innerText = initialText;
+            button.classList.remove("bg-rose-600", "text-white");
+            button.classList.add("accent-bg");
+          }, 4000);
+        }
+      });
     });
-  });
 });
