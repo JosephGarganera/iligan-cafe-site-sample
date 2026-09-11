@@ -1,0 +1,15 @@
+---
+// src/components/store/StorefrontHero.astro
+interface Props {
+  businessName: string;
+  businessType: string;
+}
+const { businessName, businessType } = Astro.props;
+---
+<section class="relative py-24 px-6 text-center border-b border-stone-500/10">
+  <div class="max-w-3xl mx-auto">
+    <span class="text-xs uppercase font-extrabold tracking-widest bg-stone-500/10 px-4 py-1.5 rounded-full">{businessType} Division</span>
+    <h2 class="font-serif text-5xl md:text-7xl font-black tracking-tight mt-6 mb-8">{businessName}</h2>
+    <p class="text-sm md:text-base opacity-70 max-w-xl mx-auto leading-relaxed">Welcome to our localized portal instance. Explore our available catalogs and listings below.</p>
+  </div>
+</section>

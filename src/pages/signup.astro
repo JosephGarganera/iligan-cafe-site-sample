@@ -76,24 +76,37 @@ Astro.response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate
         </form>
     </div>
 
-    <!-- Client-Side Automation Pipeline Handler Script -->
+        <!-- Client-Side Automation Pipeline Handler Script -->
+       <!-- Client-Side Automation Pipeline Handler Script -->
     <script is:inline>
         document.getElementById('signupForm')?.addEventListener('submit', async (e) => {
+            // 1. FORCE THE BROWSER TO IMMEDIATELY KILL ALL DUAL EVENT ECHO TRAILS
             e.preventDefault();
+            e.stopImmediatePropagation();
             
             const submitBtn = document.getElementById('submitBtn');
+            const businessNameVal = document.getElementById('businessName').value;
+            const slugVal = document.getElementById('slug').value.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '-');
+            const businessTypeVal = document.getElementById('businessType').value;
+            const emailVal = document.getElementById('email').value;
+            const passwordVal = document.getElementById('password').value;
+
+            // Double check safety gate to prevent clicking twice while transmitting
+            if (submitBtn.disabled) return;
+
             const payload = {
-                businessName: document.getElementById('businessName').value,
-                slug: document.getElementById('slug').value.toLowerCase().trim().replace(/[^a-z0-0-_]/g, '-'),
-                businessType: document.getElementById('businessType').value,
-                email: document.getElementById('email').value,
-                password: document.getElementById('password').value
+                businessName: businessNameVal,
+                slug: slugVal,
+                businessType: businessTypeVal,
+                email: emailVal,
+                password: passwordVal
             };
 
             submitBtn.innerText = "Provisioning Platform Infrastructure...";
             submitBtn.disabled = true;
 
             try {
+                // 2. PIPELINE TIER 1: Deploy isolated business profile records row
                 const res = await fetch('/api/auth/register-tenant', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -102,19 +115,43 @@ Astro.response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate
 
                 const data = await res.json();
                 
-                if (res.ok && data.success) {
-                    alert(`Initialization Complete! Your isolated space is ready.\n\nStorefront Sandbox URL: http://localhost:4321/?tenant=${payload.slug}\nAdmin Dashboard URL: http://localhost:4321/dashboard?tenant=${payload.slug}`);
-                    window.location.href = `/dashboard?tenant=${payload.slug}`;
-                } else {
-                    alert(`Provisioning Interrupted: ${data.error || 'System anomaly occurred.'}`);
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || 'System anomaly occurred during tenant profiling.');
                 }
+
+                const assignedTenantUuid = data.tenantId || slugVal;
+                submitBtn.innerText = "Configuring Super-Admin Security Profiles...";
+
+                // 3. PIPELINE TIER 2: Securely call our verified add-staff route
+                const staffRes = await fetch('/api/auth/add-staff', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: emailVal,
+                        password: passwordVal,
+                        displayName: `${businessNameVal} Owner`,
+                        assignedRole: 'owner',
+                        tenantId: assignedTenantUuid
+                    })
+                });
+
+                const staffData = await staffRes.json();
+
+                if (staffRes.status === 201 || staffData.success) {
+                    // 4. CLEAN SUCCESSFUL ROUTING GATEWAY
+                    alert(`Initialization Complete! Your isolated space is ready.\n\nWelcome to your new multi-tenant instance.`);
+                    window.location.href = `/dashboard?tenant=${slugVal}`;
+                } else {
+                    alert(`Infrastructure configured, but Staff Provisioning Interrupted: ${staffData.error}`);
+                }
+
             } catch (err) {
                 alert(`Network Pipeline Failure: ${err.message}`);
-            } finally {
                 submitBtn.innerText = "Initialize Instant Go-Live Workflow";
                 submitBtn.disabled = false;
             }
         });
     </script>
+
 </body>
 </html>

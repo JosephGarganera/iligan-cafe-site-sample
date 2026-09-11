@@ -1,86 +1,100 @@
 // src/utils/queries.js
 import { supabase } from "./supabaseClient";
 
-/**
- * Dynamically resolves everything a tenant needs to render its storefront completely.
- * Feeds data straight down to index.astro with zero upfront caching bottlenecks.
- * @param {string} tenantId - The unique routing slug parsed from Vercel Edge Middleware
- */
 export async function getStorefrontData(tenantId) {
   try {
-    // 1. Fetch Tenant Profile information to ensure business is active
+    if (!tenantId) return { error: "No tenant context provided." };
+
+    console.log(
+      `[QUERIES DATA] Initiating secure multi-match lookup for tenant context: "${tenantId}"`,
+    );
+
+    // 1. Resolve the primary tenant profile using either the subdomain text string or full URL path
     const { data: tenant, error: tenantError } = await supabase
       .from("tenants")
-      .select("*")
-      .eq("id", tenantId)
-      .single();
+      .select("id, business_name, business_type, subdomain, status")
+      .or(`subdomain.eq.${tenantId},subdomain.eq.${tenantId}.iligancafes.com`)
+      .maybeSingle();
 
     if (tenantError || !tenant) {
       console.error(
-        `Tenant resolution failure for id: ${tenantId}`,
+        `[QUERIES DB ERROR] Failed to resolve tenant partition records:`,
         tenantError,
       );
-      return { error: "Business instance not found." };
+      return { error: "Tenant not found inside database registries." };
     }
 
-    // IF THE ACCOUNT IS SUSPENDED, HALT PAYLOAD AND RETURN STATUS IMMEDIATELY
     if (tenant.status === "suspended") {
-      return {
-        isSuspended: true,
-        businessName: tenant.business_name,
-        subdomain: tenant.subdomain,
-      };
+      return { isSuspended: true, businessName: tenant.business_name };
     }
 
-    // 2. Fire concurrent requests for theme configurations and product inventories
+    // 2. Query matching themes and product catalogs concurrently
     const [themeResponse, entitiesResponse] = await Promise.all([
       supabase
         .from("tenant_themes")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .maybeSingle(), // FIXED: Using maybeSingle() prevents crash if theme row is missing during setup
+        .select("layout_mode, color_tokens, typography_family")
+        .eq("tenant_id", tenant.id)
+        .maybeSingle(),
       supabase
         .from("tenant_entities")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .eq("is_visible", true),
+        .select("id, title, description, price, imageurl, category, metadata")
+
+        // SAFE CONTEXT MATCHING: Filter records by matching the exact tenant identifier string row
+        .eq("tenant_id", tenant.id)
+
+        .eq("is_visible", true)
+        .eq("is_deleted", false),
     ]);
 
-    if (entitiesResponse.error) throw entitiesResponse.error;
-
-    // 3. Extract data safely with unified fallback structural values
     const themeData = themeResponse.data || {};
 
+    // 3. Remap database fields to match what ProductCard.astro expects
+    const standardizedItems = (entitiesResponse.data || []).map((item) => ({
+      id: item.id,
+      name: item.title,
+      description: item.description,
+      price: item.price,
+
+      // FIXED: Provides BOTH casings to clear the component destructuring trap!
+      imageUrl: item.imageurl,
+      imageurl: item.imageurl,
+
+      category: item.category,
+      metadata: item.metadata || {},
+    }));
+
     return {
+      success: true,
       businessName: tenant.business_name,
       businessType: tenant.business_type,
-      subdomain: tenant.subdomain,
       layoutMode: themeData.layout_mode || "grid",
-      navigationStyle: themeData.navigation_style || "tabs",
       colorTokens: themeData.color_tokens || {
         primary: "#800020",
         bg: "#FAF9F5",
         text: "#1f2937",
       },
       typographyFamily: themeData.typography_family || "sans",
-      catalogItems: entitiesResponse.data || [],
+      catalogItems: standardizedItems,
     };
   } catch (error) {
-    console.error("Fatal multi-tenant payload fetch failure:", error.message);
-    return { error: "Internal system data lake recovery error." };
+    console.error("Fatal data extraction layer drop:", error.message);
+    return { error: error.message };
   }
 }
 
 /**
  * Fetches transaction metrics securely for an authenticated business owner's private dashboard.
- * Row-Level Security (RLS) automatically ensures no data pollution between businesses.
+ * ENTERPRISE OPTIMIZATION: Projects explicit transaction columns for rapid BI rendering data matrices.
  * @param {string} tenantId - The unique business token matching the owner's JWT
  */
 export async function getTenantDashboardMetrics(tenantId) {
   const { data: logs, error } = await supabase
     .from("tenant_ledger")
-    .select("*")
+    .select(
+      "id, total_value, interaction_type, payment_status, reference_token, created_at",
+    ) // Explicit projections
     .eq("tenant_id", tenantId)
+    .eq("is_deleted", false) // Filter gate blocks soft-deleted rows from distorting analytics figures
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -88,7 +102,7 @@ export async function getTenantDashboardMetrics(tenantId) {
     return { metrics: null, ledger: [] };
   }
 
-  // Programmatic, zero-cost accounting math aggregation
+  // Programmatic, zero-cost accounting aggregation computing
   const totalRevenue = logs.reduce(
     (sum, entry) => sum + parseFloat(entry.total_value || 0),
     0,
@@ -106,7 +120,6 @@ export async function getTenantDashboardMetrics(tenantId) {
 
 /**
  * Verifies an authenticated user's permission layer inside a specific tenant partition.
- * Blocks unauthorized cashiers from accessing full owner-only financials.
  * @param {string} userUuid - The authenticated user's unique identity string from Supabase Auth
  * @param {string} tenantId - The business space the user is attempting to access
  */
@@ -114,19 +127,18 @@ export async function verifyUserStaffClearance(userUuid, tenantId) {
   try {
     const { data: profile, error } = await supabase
       .from("staff_profiles")
-      .select("assigned_role, tenant_id")
+      .select("assigned_role, tenant_id") // Explicit projections
       .eq("id", userUuid)
       .single();
 
     if (error || !profile) return { authorized: false, role: "none" };
 
-    // Anti-Fraud Check: Ensure staff isn't attempting to read data from a competing business
     if (profile.tenant_id !== tenantId)
       return { authorized: false, role: "none" };
 
     return {
       authorized: true,
-      role: profile.assigned_role, // Returns 'owner' or 'staff'
+      role: profile.assigned_role,
     };
   } catch (err) {
     return { authorized: false, role: "none" };

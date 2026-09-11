@@ -1,23 +1,155 @@
 ---
-// src/components/catalog/InventoryList.astro
-const { items } = Astro.props;
+// src/components/catalog/LiveOrderFeed.astro
+interface Props {
+  tenantId: string;
+  initialOrders: any[];
+}
+
+const { tenantId, initialOrders } = Astro.props;
 ---
-<div class="bg-slate-800/20 border border-slate-800/60 rounded-2xl p-6 space-y-4">
-    <h3 class="text-sm font-bold text-slate-300">Active Offerings Catalog Registry ({items.length})</h3>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {items.map(item => (
-            <div class="bg-slate-950 border border-slate-800/80 p-4 rounded-xl flex justify-between items-center gap-4">
-                <div class="flex items-center gap-3 min-w-0">
-                    <img src={item.imageUrl || "/placeholder.jpg"} class="w-10 h-10 object-cover rounded-lg bg-slate-800 flex-shrink-0" />
-                    <div class="min-w-0">
-                        <h4 class="text-xs font-bold text-white truncate">{item.title}</h4>
-                        <p class="text-[10px] text-indigo-400 font-bold mt-0.5">₱{parseFloat(item.price).toFixed(2)} • <span class="text-slate-400 font-normal uppercase">{item.category}</span></p>
-                    </div>
-                </div>
-                <button data-delete-btn={item.id} class="text-red-400 hover:text-red-300 hover:bg-red-950/30 p-2 rounded-lg border border-transparent hover:border-red-900/50 text-xs font-bold transition-all cursor-pointer">
-                    Delete
-                </button>
-            </div>
-        ))}
+
+<div class="w-full bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden" data-tenant-id={tenantId}>
+  <!-- Real-time Live Connection Status Header Bar -->
+  <div class="bg-slate-900 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-2">
+      <span class="relative flex h-2 w-2">
+        <span id="sync-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+        <span id="sync-dot" class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+      </span>
+      <h3 class="text-xs font-semibold tracking-wider text-slate-300 uppercase">Live POS Sync Terminal</h3>
     </div>
+    <span id="sync-status-text" class="text-[10px] text-emerald-400 font-mono tracking-tight bg-emerald-950 px-2 py-0.5 rounded border border-emerald-900/50">CONNECTED</span>
+  </div>
+
+  <!-- Live Feed Interactive Stack -->
+  <div class="p-6">
+    <div id="empty-feed-state" class={`flex flex-col items-center justify-center py-12 text-center ${initialOrders.length > 0 ? 'hidden' : ''}`}>
+      <div class="p-3 bg-slate-50 text-slate-400 rounded-full mb-3">
+        <svg xmlns="http://w3.org" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+      </div>
+      <p class="text-sm font-medium text-slate-600">No transactions recorded today</p>
+      <p class="text-xs text-slate-400 mt-0.5">Awaiting active checkout triggers...</p>
+    </div>
+
+    <ul id="live-ledger-stream" class="divide-y divide-slate-100 max-h-[480px] overflow-y-auto pr-1">
+      {initialOrders.map((order) => (
+        <li class="py-3.5 flex items-center justify-between text-sm transition-all duration-300 hover:bg-slate-50/50 px-2 rounded-lg" data-order-id={order.id}>
+          <div class="flex flex-col">
+            <span class="font-mono text-xs font-bold text-slate-800">#{order.id.slice(0, 8).toUpperCase()}</span>
+            <span class="text-xs text-slate-400 mt-0.5">{new Date(order.created_at).toLocaleTimeString()}</span>
+          </div>
+          <div class="flex items-center space-x-4">
+            <div class="text-right">
+              <span class="font-semibold text-slate-900 tracking-tight">${parseFloat(order.total_value).toFixed(2)}</span>
+              <span class="block text-[10px] text-slate-400 uppercase tracking-wider">{order.payment_method || 'Cash'}</span>
+            </div>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">Success</span>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
 </div>
+
+<script>
+  import { supabase } from "../../utils/supabaseClient";
+
+  // Gracefully initialize client logic during hydration
+  document.addEventListener("DOMContentLoaded", () => {
+    const container = document.querySelector("[data-tenant-id]");
+    if (!container) return;
+
+    const tenantId = container.getAttribute("data-tenant-id");
+    const streamList = document.getElementById("live-ledger-stream");
+    const emptyState = document.getElementById("empty-feed-state");
+    
+    // Status Indicator Targets
+    const syncPing = document.getElementById("sync-ping");
+    const syncDot = document.getElementById("sync-dot");
+    const syncStatusText = document.getElementById("sync-status-text");
+
+    function updateSyncUI(status: 'connected' | 'disconnected' | 'connecting') {
+      if (status === 'connected') {
+        syncPing?.classList.remove('hidden');
+        syncDot?.classList.remove('bg-amber-500', 'bg-rose-500');
+        syncDot?.classList.add('bg-emerald-500');
+        if (syncStatusText) {
+          syncStatusText.innerText = "CONNECTED";
+          syncStatusText.className = "text-[10px] text-emerald-400 font-mono tracking-tight bg-emerald-950 px-2 py-0.5 rounded border border-emerald-900/50";
+        }
+      } else {
+        syncPing?.classList.add('hidden');
+        syncDot?.classList.remove('bg-emerald-500');
+        syncDot?.classList.add(status === 'connecting' ? 'bg-amber-500' : 'bg-rose-500');
+        if (syncStatusText) {
+          syncStatusText.innerText = status === 'connecting' ? 'SYNCING' : 'OFFLINE';
+          syncStatusText.className = status === 'connecting' 
+            ? "text-[10px] text-amber-400 font-mono tracking-tight bg-amber-950 px-2 py-0.5 rounded border border-amber-900/50"
+            : "text-[10px] text-rose-400 font-mono tracking-tight bg-rose-950 px-2 py-0.5 rounded border border-rose-900/50";
+        }
+      }
+    }
+
+    // 1. Initialize Realtime Subscription Channel scoped to tenant partition
+    const channel = supabase
+      .channel(`tenant-pos-stream:${tenantId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "tenant_ledger",
+          filter: `tenant_id=eq.${tenantId}` // Client-side subscription filter matching exact active tenant context
+        },
+        (payload) => {
+          const newOrder = payload.new;
+          
+          // Hide empty fallback interface elegantly if visible
+          emptyState?.classList.add("hidden");
+
+          // 2. Compute dynamic, hardware-accurate presentation layouts
+          const orderIdStr = (newOrder.id || '').slice(0, 8).toUpperCase();
+          const timestamp = new Intl.DateTimeFormat('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          }).format(new Date(newOrder.created_at));
+          
+          const orderVal = parseFloat(newOrder.total_value || 0).toFixed(2);
+          const payMethod = newOrder.payment_method || 'Cash';
+
+          // 3. Construct modern, isolated DOM row matching layout styles
+          const li = document.createElement("li");
+          li.className = "py-3.5 flex items-center justify-between text-sm transition-all duration-500 bg-emerald-50/70 hover:bg-slate-50/50 px-2 rounded-lg scale-95 opacity-0";
+          li.setAttribute("data-order-id", newOrder.id);
+          li.innerHTML = `
+            <div class="flex flex-col">
+              <span class="font-mono text-xs font-bold text-slate-800">#${orderIdStr}</span>
+              <span class="text-xs text-slate-400 mt-0.5">${timestamp}</span>
+            </div>
+            <div class="flex items-center space-x-4">
+              <div class="text-right">
+                <span class="font-semibold text-slate-900 tracking-tight">$${orderVal}</span>
+                <span class="block text-[10px] text-slate-400 uppercase tracking-wider">${payMethod}</span>
+              </div>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">Success</span>
+            </div>
+          `;
+
+          // Prepend layout to feed list stack cleanly
+          if (streamList) {
+            streamList.insertBefore(li, streamList.firstChild);
+            
+            // Trigger beautiful entrance flash sequence via micro-task layout loops
+            setTimeout(() => {
+              li.classList.remove("scale-95", "opacity-0", "bg-emerald-50/70");
+            }, 50);
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") updateSyncUI('connected');
+        if (status === "CLOSED" || status === "CHANNEL_ERROR") updateSyncUI('disconnected');
+      });
+  });
+</script>

@@ -1,0 +1,22 @@
+---
+// src/components/store/PaywallScreen.astro
+interface Props {
+  businessName: string;
+}
+const { businessName } = Astro.props;
+---
+<div class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4 antialiased">
+  <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-6 shadow-2xl">
+    <div class="w-16 h-16 bg-red-950/50 border border-red-900 rounded-2xl flex items-center justify-center mx-auto text-2xl">⚠️</div>
+    <div class="space-y-2">
+      <h1 class="text-xl font-bold text-white">{businessName}</h1>
+      <p class="text-xs uppercase font-extrabold tracking-widest text-red-400">Subscription Term Suspended</p>
+    </div>
+    <p class="text-sm text-slate-400 leading-relaxed">Access to this storefront instance has been temporarily restricted due to an unsettled balance or expired term cycle.</p>
+    <div class="pt-2">
+      <a href={`mailto:billing@omnipos.io?subject=Billing-${encodeURIComponent(businessName)}`} class="block w-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-3.5 rounded-xl transition-all border border-slate-700 text-center">
+        Contact Network Settlement Administration
+      </a>
+    </div>
+  </div>
+</div>

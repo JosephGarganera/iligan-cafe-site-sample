@@ -1,320 +1,115 @@
 ---
 // src/pages/index.astro
-
-// 1. Establish Edge Network cache busting configurations immediately
 Astro.response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
 Astro.response.headers.set('Surrogate-Control', 'no-store');
 
-// 2. Import core application styles, components, and unified data engines
 import '../styles/global.css';
 import Navbar from '../components/Navbar.astro';
 import ShiftBanner from '../components/ShiftBanner.astro';
-import ProductCard from '../components/ProductCard.astro';
 import { getStorefrontData } from '../utils/queries.js';
 
-// 3. Resolve dynamic multi-tenant tracking keys from edge middleware
+import PaywallScreen from '../components/store/PaywallScreen.astro';
+import StorefrontHero from '../components/store/StorefrontHero.astro';
+import ProductModal from '../components/store/ProductModal.astro';
+import LiveOrderFeed from '../components/catalog/LiveOrderFeed.astro';
+import ProductCard from '../components/ProductCard.astro';
+
 const { tenantId } = Astro.locals;
 const store = await getStorefrontData(tenantId);
 
-if (store.error) {
+// 1. RECTIFIED SAFE SECURITY GATES
+if (!store || store.error) {
   return Astro.redirect('/404-tenant-not-found');
 }
 
-// DYNAMIC PAYWALL INJECTION INTERCEPTION
 if (store.isSuspended) {
-  // If the account is suspended, short-circuit and render the paywall HTML template immediately
-  return Astro.response = new Response(
-    `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Account Suspended | SaaS Network</title>
-        <link href="https://googleapis.com" rel="stylesheet">
-        <script src="https://tailwindcss.com"></script>
-        <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
-    </head>
-    <body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4 antialiased">
-        <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-6 shadow-2xl">
-            <div class="w-16 h-16 bg-red-950/50 border border-red-900 rounded-2xl flex items-center justify-center mx-auto text-2xl">⚠️</div>
-            <div class="space-y-2">
-                <h1 class="text-xl font-bold text-white">${store.businessName}</h1>
-                <p class="text-xs uppercase font-extrabold tracking-widest text-red-400">Subscription Term Suspended</p>
-            </div>
-            <p class="text-sm text-slate-400 leading-relaxed">Access to this storefront instance and its transactional Point of Sale ledger channels has been temporarily restricted due to an unsettled balance or expired term cycle.</p>
-            <div class="pt-2">
-                <a href="mailto:billing@://iligancafes.com{store.businessName}" class="block w-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-3.5 rounded-xl transition-all border border-slate-700">
-                    Contact Network Settlement Administration
-                </a>
-            </div>
-        </div>
-    </body>
-    </html>
-    `,
-    {
-      status: 402, // 402 is the official HTTP standard code for "Payment Required"
-      headers: { 'Content-Type': 'text/html' }
-    }
-  );
+  Astro.response.status = 402; // Payment Required
 }
 
-// 4. Extract data structures uniformly out of our flexible database schema query layout
-const { 
-  businessName, 
-  businessType, 
-  layoutMode, 
-  colorTokens, 
-  typographyFamily, 
-  catalogItems 
-} = store;
+const { businessName, businessType, layoutMode, colorTokens, catalogItems } = store;
 
-// 5. Fallback placeholder arrays to keep existing layout variables happy
-const activeStaff = []; 
-const urlFor = (source) => source || '/placeholder.jpg'; 
+// 2. Public placeholder CDN fallback utility
+const urlFor = (source) => source || 'https://unsplash.com'; 
 
-// 6. Dynamic styling mapping tied strictly to the database color token overrides
 const primaryColor = colorTokens?.primary || '#800020';
 const backgroundColor = colorTokens?.bg || '#FAF9F5';
 const textColor = colorTokens?.text || '#1f2937';
 
-// 7. Re-structure menus dynamically based on whatever items are loaded into this catalog
-const uniqueCategories = [...new Set(catalogItems.map(item => item.category))];
-const structuredMenu = uniqueCategories.map(catId => ({
-  id: catId,
-  name: catId.charAt(0).toUpperCase() + catId.slice(1), // Capitalize label dynamically
-  products: catalogItems.filter(item => item.category === catId)
-}));
-
-const recommendedItems = catalogItems.filter(item => item.metadata?.isRecommended === true || item.price > 1000);
+const uniqueCategories = [...new Set((catalogItems || []).map((item) => item.category))];
+const recommended = (catalogItems || []).filter((item) => item.metadata?.isRecommended === true || item.price > 1000);
 ---
 
-<!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{businessName} | Powered by SaaS Engine</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet">
-    
-    <!-- Dynamic Theme Token Injection -->
-    <style define:vars={{ primaryColor, backgroundColor, textColor, typographyFamily }}>
-        :root {
-          --tenant-primary: var(--primaryColor);
-          --tenant-bg: var(--backgroundColor);
-          --tenant-text: var(--textColor);
+{store.isSuspended ? (
+  <PaywallScreen businessName={businessName} />
+) : (
+  <html lang="en" class="scroll-smooth">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>{businessName} | Powered by SaaS Engine</title>
+      
+      <!-- RESTORED: Professional Typography Fonts CDN Packages -->
+      <link href="https://googleapis.com" rel="stylesheet" />
+      
+      <style define:vars={{ primaryColor, backgroundColor, textColor }}>
+        :root { 
+          --tenant-primary: var(--primaryColor); 
+          --tenant-bg: var(--backgroundColor); 
+          --tenant-text: var(--textColor); 
         }
         body { 
           background-color: var(--tenant-bg); 
           color: var(--tenant-text); 
-          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-family: 'Plus Jakarta Sans', sans-serif; 
         }
         .font-serif { font-family: 'Playfair Display', serif; } 
-        .scrollbar-none::-webkit-scrollbar { display: none; }
         .accent-bg { background-color: var(--tenant-primary); }
-        .accent-border { border-color: var(--tenant-primary); }
-    </style>
-</head>
-<body class="antialiased selection:bg-amber-200 min-h-screen flex flex-col justify-between transition-colors duration-500">
+      </style>
+    </head>
+    <body class="antialiased min-h-screen flex flex-col justify-between" data-tenant-token={tenantId}>
+      
+      <Navbar title={businessName} isDark={backgroundColor === '#1E222A'} />
+      <ShiftBanner activeStaff={[]} urlFor={urlFor} />
+      <StorefrontHero businessName={businessName} businessType={businessType} />
 
-    <Navbar title={businessName} isDark={backgroundColor === '#1E222A'} />
-    <ShiftBanner activeStaff={activeStaff} urlFor={urlFor} />
-
-    <!-- Polymorphic Structural Layout Shell Header -->
-    <section class="relative py-24 px-6 text-center border-b border-stone-500/10">
-        <div class="max-w-3xl mx-auto">
-            <span class="text-xs uppercase font-extrabold tracking-widest bg-stone-500/10 px-4 py-1.5 rounded-full">{businessType} Division</span>
-            <h2 class="font-serif text-5xl md:text-7xl font-black tracking-tight mt-6 mb-8">{businessName}</h2>
-            <p class="text-sm md:text-base opacity-70 max-w-xl mx-auto leading-relaxed">Welcome to our localized portal instance. Explore our available catalogs and listings below.</p>
-        </div>
-    </section>
-
-    <!-- Recommended Dynamic Items Spotlight Grid Section -->
-    {recommendedItems.length > 0 && (
-      <section class="bg-stone-500/5 border-b border-stone-500/10 py-16 px-6">
-        <div class="max-w-6xl mx-auto">
-          <div class="flex items-center gap-3 mb-10 justify-center md:justify-start">
-            <span class="text-xl">⚡</span>
-            <h3 class="font-serif text-3xl font-black tracking-tight">Featured Highlights</h3>
-          </div>
-          <div class="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {recommendedItems.map((p) => <ProductCard item={p} urlFor={urlFor} themeSettings={{}} />)}
-          </div>
-        </div>
-      </section>
-    )}
-
-    <!-- Dynamic Category Tab Segment Switcher Layout Container -->
-    <section id="menu-showcase" class="max-w-6xl w-full mx-auto px-4 md:px-6 py-20 flex-1">
-        {structuredMenu.length > 0 ? (
-          <div class="flex justify-start md:justify-center gap-2 overflow-x-auto pb-3 mb-10 sticky top-[78px] z-40 backdrop-blur-md p-1.5 rounded-2xl scrollbar-none bg-stone-500/5">
-              {structuredMenu.map((cat, idx) => (
-                  <button 
-                    data-target={`tab-pane-${cat.id}`} 
-                    class={`tab-trigger shrink-0 text-xs font-bold px-6 py-3 rounded-full border transition-all duration-200 cursor-pointer ${idx === 0 ? 'accent-bg text-white border-transparent shadow-md' : 'bg-stone-500/10 text-current border-stone-500/10'}`}>
-                    {cat.name}
-                  </button>
-              ))}
+      <main class="max-w-7xl mx-auto w-full px-4 md:px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1">
+        
+        <!-- Catalog Display Stream: Spans 2 full columns -->
+        <section class="lg:col-span-2 space-y-12">
+          <div class="text-left">
+            <h2 class="text-2xl font-black text-white tracking-tight font-serif mb-2">Available Collection & Artifacts</h2>
+            <p class="text-xs text-slate-400">Browse through our authentic local listings. Every checkout transaction verified securely at the server edge layer.</p>
           </div>
 
-          <div>
-              {structuredMenu.map((cat, idx) => (
-                  <div 
-                    id={`tab-pane-${cat.id}`} 
-                    class={`tab-pane transition-all duration-300 grid sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8 ${idx === 0 ? 'block opacity-100' : 'hidden opacity-0 translate-y-2'}`}>
-                      {cat.products.map((p) => <ProductCard item={p} urlFor={urlFor} themeSettings={{}} />)}
-                  </div>
-              ))}
+          <!-- FIXED UNNESTED DATA MAPPING LOOP -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {catalogItems && catalogItems.map((p) => (
+              <ProductCard item={p} urlFor={urlFor} themeSettings={{}} />
+            ))}
           </div>
-        ) : (
-          <div class="text-center py-12 opacity-60">No active operational elements deployed in this client instance database catalog.</div>
-        )}
-    </section>
 
-    <footer class="border-t border-stone-500/10 py-12 text-center text-xs opacity-60">
-        <span class="font-serif text-xl font-black block mb-2">{businessName}</span>
+          {(!catalogItems || catalogItems.length === 0) && (
+            <div class="p-12 text-center border border-dashed border-slate-800 rounded-3xl bg-slate-900/30">
+              <p class="text-xs text-slate-500 font-mono">No active catalog entities resolved for this client partition space.</p>
+              <p class="text-[10px] text-slate-600 font-mono mt-1">Execute a database seed update or verify the 'is_visible' column parameters.</p>
+            </div>
+          )}
+        </section>
+
+        <!-- Real-Time POS terminal display sidebar card -->
+        <aside class="w-full lg:sticky lg:top-24 h-fit">
+          <LiveOrderFeed tenantId={tenantId} initialOrders={[]} />
+        </aside>
+
+      </main>
+
+      <footer class="border-t border-slate-900 py-12 text-center text-xs opacity-60 bg-slate-950/20">
+        <span class="font-serif text-xl font-black block mb-2 text-white">{businessName}</span>
         <p class="uppercase font-bold tracking-widest text-[9px]">&copy; 2026 Polymorphic Multi-Tenant SaaS Systems Network.</p>
-    </footer>
+      </footer>
 
-        <!-- Reusable Multi-Tenant Modal Target Architecture -->
-    {catalogItems.map((p) => (
-      <div id={`modal-target-${p.id}`} class="modal-view hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-4xl rounded-2xl overflow-hidden grid md:grid-cols-2 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
-            
-            <!-- Left Side Canvas Spot -->
-            <div class="relative bg-slate-950 h-64 md:h-full min-h-[300px]">
-                <img src={p.imageUrl || "/placeholder.jpg"} alt={p.title} class="w-full h-full object-cover" />
-            </div>
-
-            <!-- Right Side Meta Specs and Checkout Workflows -->
-            <div class="p-8 flex flex-col justify-between space-y-6">
-                <div>
-                    <div class="flex justify-between items-start">
-                        <h3 class="text-2xl font-bold text-white">{p.title}</h3>
-                        <span class="text-lg font-black text-indigo-400">₱{parseFloat(p.price).toFixed(2)}</span>
-                    </div>
-                    <p class="text-sm text-slate-400 mt-4 leading-relaxed">{p.description}</p>
-                </div>
-
-                <!-- Polymorphic Action Workflow Container -->
-                <div class="space-y-4">
-                    <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block">Select Transaction Channel</label>
-                    <select id={`gateway-${p.id}`} class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
-                        <option value="GCash">GCash Portal</option>
-                        <option value="Maya">Maya Account</option>
-                        <option value="Counter Cash">Over-The-Counter Cash</option>
-                    </select>
-                    
-                    <button data-checkout-btn={p.id} data-price={p.price} class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm py-3.5 rounded-xl transition-all shadow-md cursor-pointer">
-                        Confirm Interaction Workflow
-                    </button>
-                </div>
-            </div>
-
-            <!-- Absolute Window Escape Button -->
-            <button data-close-modal={p.id} class="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800/50 p-2 rounded-full cursor-pointer">&times;</button>
-        </div>
-      </div>
-    ))}
-
-
-    <!-- Interactive Client Swapping Script Engine -->
-    <script is:inline>
-        document.addEventListener('DOMContentLoaded', () => {
-            const triggers = document.querySelectorAll('.tab-trigger');
-            const panes = document.querySelectorAll('.tab-pane');
-            
-            triggers.forEach(trigger => {
-                trigger.addEventListener('click', () => {
-                    const targetId = trigger.getAttribute('data-target');
-                    triggers.forEach(t => t.classList.remove('accent-bg', 'text-white', 'border-transparent', 'shadow-md'));
-                    panes.forEach(p => p.classList.add('hidden', 'opacity-0', 'translate-y-2'));
-                    
-                    trigger.classList.add('accent-bg', 'text-white', 'border-transparent', 'shadow-md');
-                    const activePane = document.getElementById(targetId);
-                    if (activePane) {
-                        activePane.classList.remove('hidden');
-                        setTimeout(() => { 
-                            activePane.classList.remove('opacity-0', 'translate-y-2'); 
-                            activePane.classList.add('opacity-100'); 
-                        }, 30);
-                    }
-                });
-            });
-
-            const modalTriggers = document.querySelectorAll('[data-modal-trigger]');
-            modalTriggers.forEach(t => {
-                t.addEventListener('click', () => {
-                    const id = t.getAttribute('data-modal-trigger');
-                    const m = document.getElementById(`modal-target-${id}`);
-                    if (m) m.classList.remove('hidden');
-                });
-            });
-
-			 // Dynamic Modal Visual Open Callbacks
-            document.querySelectorAll('[data-modal-trigger]').forEach(t => {
-                t.addEventListener('click', () => {
-                    const id = t.getAttribute('data-modal-trigger');
-                    const modalInstance = document.getElementById(`modal-target-${id}`);
-                    if (modalInstance) modalInstance.classList.remove('hidden');
-                });
-            });
-
-            // Modal Manual Escape Execution Callbacks
-            document.querySelectorAll('[data-close-modal]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const id = btn.getAttribute('data-close-modal');
-                    const modalInstance = document.getElementById(`modal-target-${id}`);
-                    if (modalInstance) modalInstance.classList.add('hidden');
-                });
-            });
-
-            // Automated Multi-Tenant SaaS Checkout API Pipeline Broker
-            document.querySelectorAll('[data-checkout-btn]').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const entityId = btn.getAttribute('data-checkout-btn');
-                    const valuePaid = btn.getAttribute('data-price');
-                    const channelUsed = document.getElementById(`gateway-${entityId}`)?.value || 'Counter';
-                    
-                    // Pull our tenant dynamic parameters directly from the global server context window
-                    const parsedUrl = new URL(window.location.href);
-                    const tenantToken = parsedUrl.searchParams.get('tenant') || 'the-tavern';
-
-                    btn.innerText = "Processing Operational Payload...";
-                    btn.disabled = true;
-
-                    try {
-                        const res = await fetch('/api/checkout', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                tenantId: tenantToken,
-                                interactionType: 'SALE',
-                                totalValue: valuePaid,
-                                paymentStatus: 'paid',
-                                payloadData: { entity_id: entityId, channel: channelUsed, device_agent: navigator.userAgent }
-                            })
-                        });
-
-                        const payloadData = await res.json();
-                        if (payloadData.success) {
-                            alert(`Transaction Registered Successfully! Tracking Token: ${payloadData.trackingId}`);
-                            document.getElementById(`modal-target-${entityId}`).classList.add('hidden');
-                        } else {
-                            alert(`Pipeline Rejected: ${payloadData.error}`);
-                        }
-                    } catch (err) {
-                        alert(`Network Operational Layer Fault: ${err.message}`);
-                    } finally {
-                        btn.innerText = "Confirm Interaction Workflow";
-                        btn.disabled = false;
-                    }
-                });
-            });
-        });
-	
-		
-    </script>
-</body>
-</html>
+      {catalogItems.map((p) => <ProductModal item={p} />)}
+      <script src="/js/storefront.js" is:inline></script>
+    </body>
+  </html>
+)}

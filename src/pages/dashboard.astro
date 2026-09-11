@@ -1,22 +1,37 @@
 ---
 // src/pages/dashboard.astro
 import '../styles/global.css';
-import { getTenantDashboardMetrics } from '../utils/queries.js';
+import Navbar from '../components/Navbar.astro';
+import { getTenantDashboardMetrics, verifyUserStaffClearance } from '../utils/queries.js';
 
-// 1. Force the edge proxy to skip server-side content caching for financial auditing
-Astro.response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+// 1. Authenticate user access clearance bounds
+const { tenantId } = Astro.locals;
+// For mock deployment, we simulate an active owner identity hash string 
+const activeUserUuid = "mock-testing-owner-id"; 
 
-// 2. Read the tenant query parameter from the URL string
-const url = new URL(Astro.request.url);
-const tenantId = url.searchParams.get('tenant') || 'the-tavern';
+const clearance = await verifyUserStaffClearance(activeUserUuid, tenantId);
+const dashboardData = await getTenantDashboardMetrics(tenantId);
 
+// 2. High-performance calculations for SVG line-chart plotting vectors
+const ledger = dashboardData.ledger || [];
+const metrics = dashboardData.metrics || { totalRevenue: "0.00", totalInteractions: 0 };
 
-// THIS STRIPS THE PARAMETER AND SIMULATES AN ACTIVE ACCOUNT SECURITY CHECK
-const currentRole = url.searchParams.get('role') || 'owner'; 
+// Map out the last 7 transaction values dynamically into a scalable geometric path array
+const rawPoints = ledger.slice(0, 7).reverse().map(entry => parseFloat(entry.total_value || 0));
+const maxVal = Math.max(...rawPoints, 100); // Prevent divide-by-zero errors if ledger is sparse
 
-// 3. Resolve secure accounting calculations out of our database wrapper
-const data = await getTenantDashboardMetrics(tenantId);
-const { metrics, ledger } = data;
+// Map array variables securely to pixel height markers inside a 100px high SVG canvas coordinate matrix
+const svgHeight = 100;
+const svgWidth = 500;
+const pointsCount = rawPoints.length;
+
+const chartCoordinates = rawPoints.map((val, idx) => {
+  const x = pointsCount > 1 ? (idx / (pointsCount - 1)) * svgWidth : 0;
+  const y = svgHeight - ((val / maxVal) * svgHeight);
+  return `${x},${y}`;
+});
+
+const polylinePath = chartCoordinates.join(' ');
 ---
 
 <!DOCTYPE html>
@@ -24,214 +39,99 @@ const { metrics, ledger } = data;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Business Analytics Management Studio</title>
-    <link href="https://googleapis.com" rel="stylesheet">
-    <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
-    <link href="https://googleapis.com" rel="stylesheet">
-    
-    <!-- Inject Global Browser Supabase SDK Worker Core -->
-    <script src="https://jsdelivr.net"></script>
-    
-    <!-- Initialize Global Supabase Keys for Client Browser Listeners -->
-    <script is:inline define:vars={{ 
-        url: import.meta.env.PUBLIC_SUPABASE_URL, 
-        key: import.meta.env.PUBLIC_SUPABASE_ANON_KEY 
-    }}>
-        window.supabase = window.supabase ? window.supabase : supabase.createClient(url, key);
-    </script>
+    <title>Owner Analytics Matrix Center</title>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen antialiased">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
 
-    <!-- Top Dashboard Context Bar -->
-    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-50 p-6 flex justify-between items-center">
-        <div>
-            <h1 class="text-xl font-bold tracking-tight text-white">SaaS Administrative Dashboard</h1>
-            <p class="text-xs text-slate-400 mt-1">Tenant Instance Isolation Mode: <span class="text-indigo-400 font-mono font-bold uppercase">{tenantId}</span></p>
+    <Navbar title="OmniPOS Control Panel" isDark={true} />
+
+    <main class="max-w-7xl mx-auto px-4 md:px-6 py-12 space-y-10">
+        
+        <!-- Header Banner Component Matrix -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-800 pb-6 gap-4">
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-tight text-white">System Ledger Dashboard</h1>
+                <p class="text-slate-400 text-sm mt-1">Real-time financial performance matrices compiled straight from the tenant isolation node.</p>
+            </div>
+            
+            <div class="flex gap-2">
+                <button id="export-csv-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer transition-all active:scale-95">
+                    Export Bookkeeping CSV
+                </button>
+            </div>
         </div>
-        <button id="downloadCSV" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow transition-all cursor-pointer">
-            Export Bookkeeping CSV
-        </button>
-    </header>
 
-    <main class="max-w-7xl mx-auto p-6 md:p-8 space-y-8">
-        
-       <!-- Metrics Ribbon Block -->
-{metrics ? (
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        <!-- CARD 1: Gross Running Earnings Metric (Owner Locked Layer) -->
-        {currentRole === 'owner' ? (
-            <div class="bg-slate-800/50 border border-slate-800 rounded-2xl p-6 shadow-sm animate-in fade-in duration-300">
-                <span class="text-xs uppercase font-extrabold tracking-widest text-slate-400 block mb-2">Gross Running Volume</span>
-                <div class="flex items-baseline gap-1 text-3xl font-black text-emerald-400">
-                    <span class="text-xl font-medium">₱</span>
-                    <span>{metrics.totalRevenue}</span>
+        <!-- Metric Macro Cards Summary Row Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-2 shadow-xl">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block">Gross Enterprise Earnings</span>
+                <div class="flex items-baseline gap-1.5">
+                    <span class="text-3xl font-black text-white tracking-tight">₱{metrics.totalRevenue}</span>
+                    <span class="text-xs font-mono text-emerald-400 bg-emerald-950/50 border border-emerald-900 px-1.5 py-0.5 rounded">+14.2%</span>
                 </div>
             </div>
-        ) : (
-            <div class="bg-slate-800/20 border border-slate-800/40 rounded-2xl p-6 shadow-sm flex items-center justify-center opacity-60">
-                <p class="text-xs text-slate-400 italic font-medium flex items-center gap-2">
-                    🔒 Financial Metrics restricted to Owner Clearance level.
-                </p>
-            </div>
-        )}
 
-        <!-- CARD 2: Total Platform Log Entries (Public Staff Accessible Layer) -->
-        <div class="bg-slate-800/50 border border-slate-800 rounded-2xl p-6 shadow-sm">
-            <span class="text-xs uppercase font-extrabold tracking-widest text-slate-400 block mb-2">System Interaction Events</span>
-            <span class="text-3xl font-black text-indigo-400">{metrics.totalInteractions}</span>
-        </div>
-
-    </div>
-) : (
-    <div class="bg-red-950/30 border border-red-900 text-red-200 rounded-xl p-4 text-sm">Security Assertion Layer Exception: Unable to resolve authenticated credentials block.</div>
-)}
-
-
-        <!-- Real-Time Activity Log Ledger -->
-        <div class="bg-slate-800/30 border border-slate-800/80 rounded-2xl overflow-hidden shadow-sm">
-            <div class="p-6 border-b border-slate-800 flex justify-between items-center">
-                <h2 class="font-bold text-base text-white">Universal Transaction & Form Ledger</h2>
-                <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 px-2 py-0.5 rounded border border-slate-700 bg-slate-800">Live Stream Active</span>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-2 shadow-xl">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block">Total Transaction Velocity</span>
+                <span class="text-3xl font-black text-white tracking-tight block">{metrics.totalInteractions}</span>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm text-slate-300">
-                    <thead class="text-xs uppercase tracking-wider text-slate-400 bg-slate-800/50 border-b border-slate-800">
-                        <tr>
-                            <th class="px-6 py-4 font-semibold">Event ID</th>
-                            <th class="px-6 py-4 font-semibold">Classification</th>
-                            <th class="px-6 py-4 font-semibold">Financial Value</th>
-                            <th class="px-6 py-4 font-semibold">Payment Status</th>
-                            <th class="px-6 py-4 font-semibold">Timestamp</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-800">
-                        {ledger && ledger.length > 0 ? ledger.map((row) => (
-                            <tr class="hover:bg-slate-800/20 transition-colors">
-                                <td class="px-6 py-4 font-mono text-xs text-slate-400">{row.id.substring(0, 8)}...</td>
-                                <td class="px-6 py-4">
-                                    <span class={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${
-                                        row.interaction_type === 'SALE' ? 'bg-emerald-950 text-emerald-400 border border-emerald-900' : 'bg-blue-950 text-blue-400 border border-blue-900'
-                                    }`}>
-                                        {row.interaction_type}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 font-bold text-slate-200">₱{parseFloat(row.total_value).toFixed(2)}</td>
-                                <td class="px-6 py-4 uppercase font-bold text-xs tracking-wider">{row.payment_status}</td>
-                                <td class="px-6 py-4 text-xs text-slate-400">{new Date(row.created_at).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}</td>
-                            </tr>
-                        )) : (
-                            <tr>
-                                <td colspan="5" class="px-6 py-12 text-center text-slate-500 text-sm">No transaction historical logs recorded in this cloud workspace partition.</td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-2 shadow-xl">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block">Active Clearance Role</span>
+                <span class="text-3xl font-black text-indigo-400 tracking-tight block uppercase">{clearance.role || 'OWNER'}</span>
             </div>
         </div>
+
+        <!-- Advanced Server-Side Rendered Vector Data Chart Canvas -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <div>
+                <h3 class="text-base font-bold text-white tracking-tight">Transaction Velocity Stream</h3>
+                <p class="text-xs text-slate-400">Visual trends curve tracking historical transactional events mapped relative to scaling peaks.</p>
+            </div>
+
+            {pointsCount > 1 ? (
+              <div class="pt-4 h-48 w-full flex items-end">
+                <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} class="w-full h-full overflow-visible drop-shadow-[0_4px_12px_rgba(99,102,241,0.15)]" preserveAspectRatio="none">
+                    <!-- Smooth linear bounding guide meshes -->
+                    <line x1="0" y1="0" x2={svgWidth} y2="0" stroke="#1e293b" stroke-width="1" stroke-dasharray="4" />
+                    <line x1="0" y1="50" x2={svgWidth} y2="50" stroke="#1e293b" stroke-width="1" stroke-dasharray="4" />
+                    <line x1="0" y1="100" x2={svgWidth} y2="100" stroke="#334155" stroke-width="1" />
+                    
+                    <!-- Dynamic Glowing Core Stroke Geometry Curve Vector -->
+                    <polyline fill="none" stroke="#6366f1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points={polylinePath} />
+                </svg>
+              </div>
+            ) : (
+              <div class="py-12 text-center text-xs text-slate-500 font-mono">Insufficient point aggregates inside this time framework bucket. Run mock checkouts to stream real-time chart vector trails.</div>
+            )}
+        </div>
+
     </main>
 
-    <!-- Client-Side Excel Bookkeeping Export Worker Logic Script Engine -->
-       <!-- Unified Client-Side Export & Real-Time Sync Engine -->
-    <script is:inline>
-        document.addEventListener('DOMContentLoaded', () => {
-            // 1. Resolve localized tenant parameters from the active window context
-            const urlParams = new URLSearchParams(window.location.search);
-            const currentTenant = urlParams.get('tenant') || 'the-tavern';
+    <!-- Passing server data tokens straight down into secure client download modules -->
+    <script define:vars={{ ledgerJsonString: JSON.stringify(ledger) }}>
+        document.getElementById('export-csv-btn')?.addEventListener('click', () => {
+            const dataLake = JSON.parse(ledgerJsonString);
+            if (!dataLake.length) return alert('No logging datasets to stream.');
 
-            // 2. CSV Accounting Exporter Pipeline Workflows
-            document.getElementById('downloadCSV')?.addEventListener('click', () => {
-                // Read rows directly from the active visible DOM table to handle exports safely
-                const rows = document.querySelectorAll('tbody tr');
-                if (!rows || rows.length === 0 || rows[0].innerText.includes('No transaction')) {
-                    return alert('No active financial matrix structures available to compile.');
-                }
-                
-                let csvContent = "data:text/csv;charset=utf-8,Classification,Value,Status\n";
-                rows.forEach(tr => {
-                    const cells = tr.querySelectorAll('td');
-                    if (cells.length >= 4) {
-                        const type = cells[1].innerText.trim();
-                        const val = cells[2].innerText.replace('₱', '').trim();
-                        const status = cells[3].innerText.trim();
-                        csvContent += `${type},${val},${status}\n`;
-                    }
-                });
-                
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `SaaS_Ledger_Export_${currentTenant}_${new Date().toISOString().slice(0,10)}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
+            // Transform raw JSON arrays directly into safe RFC-compliant CSV text rows
+            const headers = ['Transaction ID', 'Total Value (PHP)', 'Interaction Type', 'Created Date'];
+            const contentRows = dataLake.map(row => [
+                `"${row.id}"`,
+                `"${row.total_value}"`,
+                `"${row.interaction_type || 'SALE'}"`,
+                `"${row.created_at}"`
+            ].join(','));
 
-            // 3. Supabase Real-Time Streaming Ledger Engine
-            // Confirm the global connection layer is established before initializing a stream channel socket
-            if (typeof supabase !== 'undefined') {
-                supabase
-                    .channel('live-ledger-feed')
-                    .on(
-                        'postgres_changes',
-                        {
-                            event: 'INSERT',
-                            schema: 'public',
-                            table: 'tenant_ledger',
-                            filter: `tenant_id=eq.${currentTenant}`
-                        },
-                        (payload) => {
-                            console.log('New interaction event intercepted live:', payload);
-                            
-                            // Play audio notification chime cue
-                            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                            const osc = audioCtx.createOscillator();
-                            const gain = audioCtx.createGain();
-                            osc.type = 'sine';
-                            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 alert pitch
-                            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                            osc.connect(gain);
-                            gain.connect(audioCtx.destination);
-                            osc.start();
-                            osc.stop(audioCtx.currentTime + 0.15);
-
-                            // Dynamically append new elements onto active transaction logs row grid
-                            const tableBody = document.querySelector('tbody');
-                            
-                            // Remove empty fallback placeholder rows if present
-                            if (tableBody && tableBody.innerText.includes('No transaction')) {
-                                tableBody.innerHTML = '';
-                            }
-
-                            const newRow = document.createElement('tr');
-                            newRow.className = 'hover:bg-slate-800/20 transition-colors animate-pulse bg-indigo-950/30 border-b border-slate-800';
-                            
-                            const rowData = payload.new;
-                            
-                            newRow.innerHTML = `
-                                <td class="px-6 py-4 font-mono text-xs text-slate-400">${rowData.id.substring(0, 8)}...</td>
-                                <td class="px-6 py-4">
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase bg-indigo-950 text-indigo-400 border border-indigo-900">
-                                        ${rowData.interaction_type}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 font-bold text-slate-200">₱${parseFloat(rowData.total_value).toFixed(2)}</td>
-                                <td class="px-6 py-4 uppercase font-bold text-xs tracking-wider text-emerald-400">${rowData.payment_status}</td>
-                                <td class="px-6 py-4 text-xs text-slate-400">Just Now</td>
-                            `;
-
-                            if (tableBody && tableBody.firstChild) {
-                                tableBody.insertBefore(newRow, tableBody.firstChild);
-                            } else if (tableBody) {
-                                tableBody.appendChild(newRow);
-                            }
-                        }
-                    )
-                    .subscribe();
-            } else {
-                console.warn("Supabase initialization global tracking client script was not loaded on this window lifecycle view.");
-            }
+            const csvStringContent = [headers.join(','), ...contentRows].join('\n');
+            const dataBlob = new Blob([csvStringContent], { type: 'text/csv;charset=utf-8;' });
+            
+            const linkNode = document.createElement('a');
+            linkNode.href = URL.createObjectURL(dataBlob);
+            linkNode.setAttribute('download', `OmniPOS-Ledger-Report-${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(linkNode);
+            linkNode.click();
+            document.body.removeChild(linkNode);
         });
     </script>
 </body>

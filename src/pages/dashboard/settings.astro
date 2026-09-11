@@ -1,0 +1,112 @@
+---
+// src/pages/dashboard/settings.astro
+import '../../styles/global.css';
+import { createClient } from '@supabase/supabase-js'; // IMPORT SYSTEM CLIENT BUILDER DIRECTLY
+import StaffOnboardForm from '../../components/settings/StaffOnboardForm.astro';
+import StaffRoster from '../../components/settings/StaffRoster.astro';
+
+Astro.response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+
+const url = new URL(Astro.request.url);
+const tenantSlug = url.searchParams.get('tenant') || 'the-tavern';
+
+// Debug Logging Accumulators
+let debugTenantError = null;
+let debugStaffError = null;
+let resolvedTenantRow = null;
+
+let staffProfiles = [];
+let businessName = 'Business Account';
+
+try {
+  // 1. Initialize an Administrative Master Client (Bypasses all hardware RLS policies entirely)
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (supabaseUrl && serviceRoleKey) {
+    const adminSupabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    // 2. Query tenant metadata safely using the super-admin client token
+    const { data: tenantData, error: tenantError } = await adminSupabase
+      .from('tenants')
+      .select('*')
+      .or(`subdomain.eq.${tenantSlug},id.eq.${tenantSlug}`)
+      .maybeSingle();
+
+    if (tenantError) debugTenantError = tenantError;
+    resolvedTenantRow = tenantData;
+
+    if (tenantData) {
+      businessName = tenantData.business_name;
+      
+      // 3. Query corresponding employee logs using the super-admin client token
+      // This completely ignores the recursive RLS filter trap and pulls rows immediately!
+      const { data: staffData, error: staffError } = await adminSupabase
+        .from('staff_profiles')
+        .select('*')
+        .or(`tenant_id.eq.${tenantSlug},tenant_id.eq.${tenantData.id}`)
+        .order('created_at', { ascending: false });
+
+      if (staffError) debugStaffError = staffError;
+      staffProfiles = staffData || [];
+    }
+  } else {
+    console.error("[BACKEND ERROR] Service role configuration keys missing in environment file.");
+  }
+} catch (err: any) {
+  console.error("[CRITICAL SYSTEM FAULT]", err.message);
+}
+---
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{businessName} Settings Center</title>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen antialiased p-6">
+
+    <!-- DIAGNOSTIC HUD OVERLAY BANNER -->
+    <div class="max-w-7xl mx-auto mb-8 bg-slate-950 border-2 border-dashed border-amber-500/50 rounded-2xl p-6 font-mono text-xs space-y-4">
+        <h2 class="text-sm font-bold text-amber-400 flex items-center gap-2">⚠️ SYSTEM DIAGNOSTIC PANEL // HOOK AUDITING HUD</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-1.5">
+                <span class="text-indigo-400 font-bold block">1. URL Query Extraction String:</span>
+                <p>Value: <strong class="bg-slate-800 px-2 py-0.5 rounded text-white">"{tenantSlug}"</strong></p>
+                <span class="text-indigo-400 font-bold block pt-2">2. Tenants Query Result Row Match:</span>
+                <p>Status: {resolvedTenantRow ? '🟢 RECORD FOUND' : '🔴 MATCH NOT FOUND IN DATABASE'}</p>
+                {resolvedTenantRow && <p class="text-slate-400 text-[10px] mt-1">Found ID: {resolvedTenantRow.id}</p>}
+            </div>
+            
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-1.5">
+                <span class="text-rose-400 font-bold block">3. Active Supabase Database Errors:</span>
+                <p class="text-amber-200">Tenant Lookup Error: {debugTenantError ? JSON.stringify(debugTenantError) : 'None'}</p>
+                <p class="text-amber-200">Staff Lookup Error: {debugStaffError ? JSON.stringify(debugStaffError) : 'None'}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Header -->
+    <header class="max-w-7xl mx-auto border border-slate-800 bg-slate-950/50 rounded-2xl p-6 mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-xl font-bold text-white">{businessName} Settings</h1>
+            <p class="text-xs text-slate-400 mt-1">Manage team credential parameters and secure employee access roles.</p>
+        </div>
+        <a href={`/dashboard?tenant=${tenantSlug}`} class="border border-slate-700 hover:bg-slate-800 text-slate-300 font-bold text-xs px-4 py-2.5 rounded-lg transition-all">Back to Analytics</a>
+    </header>
+
+    <!-- Main Structural Core Grid -->
+    <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <StaffOnboardForm />
+        <div class="lg:col-span-2">
+            <StaffRoster profiles={staffProfiles} />
+        </div>
+    </main>
+
+</body>
+</html>

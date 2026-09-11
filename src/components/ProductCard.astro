@@ -2,26 +2,48 @@
 // src/components/ProductCard.astro
 const { item } = Astro.props;
 
-// 1. Unpack our generalized multi-tenant catalog attributes safely with fallbacks
-const { id, title, description, price, imageUrl, metadata } = item;
+// 1. Unpack properties with comprehensive fallback checks for case-sensitivity
+const id = item?.id;
+const title = item?.title || item?.name || "Premium Collection Item";
+const description = item?.description || "";
+const price = item?.price || 0;
+const metadata = item?.metadata || {};
 
-const formattedPrice = parseFloat(price || 0).toFixed(2);
-const itemImage = imageUrl || '/placeholder.jpg';
+const formattedPrice = parseFloat(price).toFixed(2);
 
-// 2. Extract dynamic structural metadata options depending on the business type
-// Examples: Cafe sizes array, Gym contract durations, or Retail stock variants
+// 2. BULLETPROOF MEDIA INGESTION ENGINE: Catches all possible database column naming combinations
+const rawImage = item?.imageurl || item?.imageUrl || item?.image_url || "";
+let itemImage = "";
+
+if (!rawImage || rawImage.trim() === "" || rawImage === "https://unsplash.com" || rawImage.includes("placeholder.jpg")) {
+  // If the field is empty, broken, or contains a local placeholder string, assign a guaranteed live stock CDN asset URL
+  if (title.toLowerCase().includes("shawl") || title.toLowerCase().includes("inaul")) {
+    itemImage = "https://unsplash.com"; // Crisp textile theme fallback
+  } else {
+    itemImage = "https://unsplash.com"; // Crisp wooden craft theme fallback
+  }
+} else {
+  // If a valid custom database URL exists, clean it up and ensure compression parameters are appended safely
+  itemImage = rawImage.trim();
+  if (itemImage.includes("unsplash.com") && !itemImage.includes("auto=format")) {
+    itemImage = `${itemImage}&auto=format&fit=crop&w=600&q=80`;
+  }
+}
+
 const sizeVariants = metadata?.sizes || metadata?.flavors || null;
 const genericBadge = metadata?.duration_days ? `${metadata.duration_days} Days Pass` : null;
 ---
 
-<div class="group bg-slate-800/40 border border-slate-800/80 rounded-2xl overflow-hidden hover:border-indigo-500/50 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between h-full relative animate-in fade-in slide-in-from-bottom-3 duration-500">
+<div class="group bg-white border border-stone-200 rounded-3xl overflow-hidden hover:border-indigo-600 hover:scale-[1.01] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between h-full relative animate-in fade-in slide-in-from-bottom-3 duration-500">
     
     <!-- Image Card Container Header -->
-    <div class="relative w-full h-56 bg-slate-950 overflow-hidden">
+    <div class="relative w-full h-56 bg-stone-100 overflow-hidden">
         <img 
             src={itemImage} 
             alt={title} 
-            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100" 
+            crossorigin="anonymous"
+            loading="lazy"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
         />
         
         <!-- Condition Badge Render -->
@@ -36,15 +58,15 @@ const genericBadge = metadata?.duration_days ? `${metadata.duration_days} Days P
     <div class="p-6 flex-1 flex flex-col justify-between space-y-4">
         <div class="space-y-2">
             <div class="flex justify-between items-start gap-2">
-                <h4 class="font-bold text-lg text-white group-hover:text-indigo-400 transition-colors line-clamp-1">{title}</h4>
-                <div class="flex items-baseline text-indigo-400 font-black text-base shrink-0">
+                <h4 class="font-extrabold text-base text-stone-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-tight text-left">{title}</h4>
+                <div class="flex items-baseline text-indigo-600 font-black text-base shrink-0">
                     <span class="text-xs font-semibold mr-0.5">₱</span>
                     <span>{formattedPrice}</span>
                 </div>
             </div>
             
             {description && (
-                <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">{description}</p>
+                <p class="text-xs text-stone-600 line-clamp-3 leading-relaxed text-left">{description}</p>
             )}
         </div>
 
@@ -53,18 +75,19 @@ const genericBadge = metadata?.duration_days ? `${metadata.duration_days} Days P
             {sizeVariants && (
                 <div class="flex gap-1.5 flex-wrap">
                     {sizeVariants.map((variant) => (
-                        <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">
+                        <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-stone-100 text-stone-700 border border-stone-200">
                             {variant}
                         </span>
                     ))}
                 </div>
             )}
             
-            <!-- Standard Transaction Open Button -->
+            <!-- Standard Transaction Open Button Trigger (Points to Target Modal) -->
             <button 
                 data-modal-trigger={id} 
-                class="w-full mt-4 bg-slate-900 border border-slate-800 hover:border-indigo-500 group-hover:bg-indigo-600 group-hover:text-white text-slate-300 text-xs font-bold py-3 px-4 rounded-xl transition-all duration-200 text-center cursor-pointer shadow-sm">
-                Interact & Acquire
+                class="w-full mt-4 bg-stone-900 border border-transparent hover:bg-stone-800 text-white text-xs font-bold py-3.5 px-4 rounded-xl transition-all duration-200 text-center cursor-pointer shadow-sm hover:shadow-stone-900/10"
+            >
+                Confirm Interaction Workflow
             </button>
         </div>
     </div>

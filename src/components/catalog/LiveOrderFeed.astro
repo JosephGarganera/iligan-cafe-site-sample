@@ -1,0 +1,65 @@
+---
+// src/components/catalog/LiveOrderFeed.astro
+interface Props {
+  tenantId: string;
+  initialOrders: any[];
+}
+const { tenantId, initialOrders = [] } = Astro.props;
+---
+<div class="w-full bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden" data-realtime-tenant={tenantId}>
+  <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
+    <div class="flex items-center space-x-2">
+      <span class="relative flex h-2 w-2">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+      </span>
+      <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Live POS Terminal</h3>
+    </div>
+    <span class="text-[9px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-900/50 px-2 py-0.5 rounded">CONNECTED</span>
+  </div>
+  <div class="p-6">
+    <ul id="realtime-ledger-stream" class="space-y-3 max-h-[350px] overflow-y-auto scrollbar-none">
+      <li id="empty-stream-notice" class="text-center py-8 text-xs text-slate-500 font-mono">Awaiting checkout triggers...</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  import { supabase } from "../../utils/supabaseClient";
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const container = document.querySelector("[data-realtime-tenant]");
+    if (!container) return;
+
+    const tenantId = container.getAttribute("data-realtime-tenant");
+    const streamList = document.getElementById("realtime-ledger-stream");
+    const emptyNotice = document.getElementById("empty-stream-notice");
+
+    // Listen for live database inserts on the tenant ledger
+    supabase
+      .channel(`live-pos:${tenantId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "tenant_ledger", filter: `tenant_id=eq.${tenantId}` },
+        (payload) => {
+          if (emptyNotice) emptyNotice.style.display = "none";
+          
+          const newSale = payload.new;
+          const li = document.createElement("li");
+          li.className = "p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-xs font-mono animate-in fade-in duration-300";
+          li.innerHTML = `
+            <div class="flex flex-col">
+              <span class="text-white font-bold">#${newSale.id.slice(0,8).toUpperCase()}</span>
+              <span class="text-slate-500 text-[10px]">${new Date(newSale.created_at).toLocaleTimeString()}</span>
+            </div>
+            <div class="text-right">
+              <span class="text-emerald-400 font-bold block">₱${parseFloat(newSale.total_value).toFixed(2)}</span>
+              <span class="text-slate-500 text-[9px] uppercase">${newSale.payload_data?.payment_channel || 'Cash'}</span>
+            </div>
+          `;
+          streamList?.insertBefore(li, streamList.firstChild);
+        }
+      )
+      .subscribe();
+  });
+</script>

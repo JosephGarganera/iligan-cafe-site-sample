@@ -1,0 +1,30 @@
+---
+// src/components/settings/StaffRoster.astro
+const { profiles } = Astro.props;
+---
+<div class="bg-slate-800/20 border border-slate-800/60 rounded-2xl p-6 space-y-4">
+    <h3 class="text-sm font-bold text-slate-300">Active Tenant Staff Registry ({profiles?.length || 0})</h3>
+    
+    <div class="divide-y divide-slate-800/60">
+        {profiles && profiles.length > 0 ? profiles.map(profile => (
+            <div class="py-4 flex justify-between items-center gap-4 first:pt-0 last:pb-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-indigo-400 border border-slate-700">
+                        {profile.display_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-white">{profile.display_name}</h4>
+                        <p class="text-[10px] text-slate-400 mt-0.5">Bound Member ID: <span class="font-mono">{profile.id.substring(0,8)}...</span></p>
+                    </div>
+                </div>
+                <span class={`px-2.5 py-1 rounded-full text-[9px] font-bold tracking-wide uppercase ${
+                    profile.assigned_role === 'owner' ? 'bg-amber-950/40 text-amber-400 border border-amber-900/50' : 'bg-slate-800 text-slate-300 border border-slate-700'
+                }`}>
+                    {profile.assigned_role}
+                </span>
+            </div>
+        )) : (
+            <div class="text-center py-12 text-slate-500 text-xs italic">No additional custom employee profiles mapped to this business space yet.</div>
+        )}
+    </div>
+</div>

@@ -1,0 +1,62 @@
+---
+// src/components/store/ProductModal.astro
+interface Props {
+  item: {
+    id: string;
+    name: string;
+    description?: string;
+    price: number | string;
+    metadata?: any;
+  };
+}
+
+const { item } = Astro.props;
+
+// Safe parsing for image fallbacks
+const imageUrl = item.metadata?.imageUrl || "/placeholder.jpg";
+const displayPrice = parseFloat(item.price as string || "0").toFixed(2);
+---
+
+<div id={`modal-target-${item.id}`} class="modal-view hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+  <div class="bg-slate-900 border border-slate-800 w-full max-w-4xl rounded-2xl overflow-hidden grid md:grid-cols-2 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 text-left">
+      
+      <!-- Left Side Image Canvas -->
+      <div class="relative bg-slate-950 h-64 md:h-full min-h-[300px]">
+          <img src={imageUrl} alt={item.name} class="w-full h-full object-cover" />
+      </div>
+
+      <!-- Right Side Meta Specs and Checkout Workflows -->
+      <div class="p-8 flex flex-col justify-between space-y-6">
+          <div>
+              <div class="flex justify-between items-start gap-4">
+                  <h3 class="text-2xl font-bold text-white">{item.name}</h3>
+                  <span class="text-lg font-black text-indigo-400 shrink-0">₱{displayPrice}</span>
+              </div>
+              <p class="text-sm text-slate-400 mt-4 leading-relaxed">
+                {item.description || 'No custom configurations appended.'}
+              </p>
+          </div>
+
+          <!-- Action Workflow Container -->
+          <div class="space-y-4">
+              <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block">Select Transaction Channel</label>
+              <select id={`gateway-${item.id}`} class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                  <option value="GCash">GCash Portal</option>
+                  <option value="Maya">Maya Account</option>
+                  <option value="Counter Cash">Over-The-Counter Cash</option>
+              </select>
+              
+              <button 
+                data-checkout-btn={item.id} 
+                data-price={item.price} 
+                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm py-3.5 rounded-xl transition-all shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                  Confirm Interaction Workflow
+              </button>
+          </div>
+      </div>
+
+      <!-- Window Escape Button -->
+      <button data-close-modal={item.id} class="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800/50 p-2 rounded-full cursor-pointer text-xl leading-none">&times;</button>
+  </div>
+</div>
